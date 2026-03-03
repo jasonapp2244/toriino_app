@@ -1,0 +1,1442 @@
+{
+  "info": {
+    "name": "Turiino App API",
+    "description": "Complete API collection for Turiino App — Auth, Mentor, Teacher, Student, Common endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8001/api/v1", "type": "string" },
+    { "key": "token",    "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": " Auth",
+      "item": [
+        {
+          "name": "1. Register (sends OTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/register", "host": ["{{base_url}}"], "path": ["register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Test User\",\n  \"email\": \"newuser@turiino.com\",\n  \"phone\": \"+971501234567\",\n  \"password\": \"password123\",\n  \"role\": \"student\",\n  \"timezone\": \"Asia/Dubai\",\n  \"language\": \"en\",\n  \"device_type\": \"android\",\n  \"fcm_token\": \"fcm_token_here\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "2. Verify OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if(json.data && json.data.token){",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/otp-verify", "host": ["{{base_url}}"], "path": ["otp-verify"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@turiino.com\",\n  \"otp_code\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "3. Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/resend-otp", "host": ["{{base_url}}"], "path": ["resend-otp"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@turiino.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Login — Mentor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if(json.data && json.data.token){",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mentor@turiino.com\",\n  \"password\": \"password\",\n  \"device_type\": \"android\",\n  \"fcm_token\": \"fcm_abc123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Login — Teacher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if(json.data && json.data.token){",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teacher@turiino.com\",\n  \"password\": \"password\",\n  \"device_type\": \"ios\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Login — Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if(json.data && json.data.token){",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@turiino.com\",\n  \"password\": \"password\",\n  \"device_type\": \"android\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Social Login (Google/Apple)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if(json.data && json.data.token){",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/social-login", "host": ["{{base_url}}"], "path": ["social-login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"google\",\n  \"provider_id\": \"google_uid_123456\",\n  \"email\": \"google.user@gmail.com\",\n  \"full_name\": \"Google User\",\n  \"profile\": \"https://lh3.googleusercontent.com/photo.jpg\",\n  \"role\": \"student\",\n  \"device_type\": \"android\",\n  \"fcm_token\": \"fcm_token_here\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Forgot Password (send OTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/forgot-password", "host": ["{{base_url}}"], "path": ["forgot-password"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@turiino.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Reset Password (verify OTP + new password)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reset-password", "host": ["{{base_url}}"], "path": ["reset-password"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@turiino.com\",\n  \"otp_code\": \"123456\",\n  \"password\": \"newpassword123\",\n  \"password_confirmation\": \"newpassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Me (Get Authenticated User)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/me", "host": ["{{base_url}}"], "path": ["me"] }
+          }
+        },
+        {
+          "name": "Assign Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/assign-role", "host": ["{{base_url}}"], "path": ["assign-role"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"student\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Update Device Token (FCM)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/update-device-token", "host": ["{{base_url}}"], "path": ["update-device-token"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcm_token\": \"new_fcm_token_xyz\",\n  \"device_id\": \"device_abc_123\",\n  \"device_type\": \"android\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/change-password", "host": ["{{base_url}}"], "path": ["change-password"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"password\",\n  \"new_password\": \"newpassword123\",\n  \"new_password_confirmation\": \"newpassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Switch Role — STEP 1: Preview (copy fields, get missing list)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/switch-role/preview", "host": ["{{base_url}}"], "path": ["switch-role","preview"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"switch_to\": \"teacher\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "STEP 1: Copies common fields from current profile. Returns missing_fields list. Role is NOT changed yet."
+          }
+        },
+        {
+          "name": "Switch Role — STEP 2: Complete Teacher Profile (fill missing fields)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/teacher/profile", "host": ["{{base_url}}"], "path": ["teacher","profile"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Mathematics\",\n  \"subject_field\": \"Algebra & Calculus\",\n  \"short_bio\": \"Experienced mentor now teaching structured courses.\",\n  \"degree\": \"MSc Mathematics\",\n  \"expertise_list\": [\"Algebra\", \"Calculus\", \"Trigonometry\"],\n  \"languages_list\": [\"English\", \"Arabic\"]\n}",
+              "options": { "raw": { "language": "json" } },
+              "description": "STEP 2: Fill in teacher-specific fields. Profile auto-marks complete when all required fields are present."
+            }
+          }
+        },
+        {
+          "name": "Switch Role — STEP 3: Confirm (finalise role change)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/switch-role/confirm", "host": ["{{base_url}}"], "path": ["switch-role","confirm"] },
+            "description": "STEP 3: Validates profile is complete, changes role, resets subscription."
+          }
+        },
+        {
+          "name": "Switch Role — Cancel (abort pending switch)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/switch-role/cancel", "host": ["{{base_url}}"], "path": ["switch-role","cancel"] },
+            "description": "Cancel a pending switch. User remains in their current role."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/logout", "host": ["{{base_url}}"], "path": ["logout"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Mentor",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/mentor/dashboard", "host": ["{{base_url}}"], "path": ["mentor","dashboard"] }
+          }
+        },
+
+        {
+          "name": "Sessions",
+          "item": [
+            {
+              "name": "List Sessions",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions", "host": ["{{base_url}}"], "path": ["mentor","sessions"] }
+              }
+            },
+            {
+              "name": "Create Session",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions", "host": ["{{base_url}}"], "path": ["mentor","sessions"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Advanced Laravel Workshop\",\n  \"type\": \"group\",\n  \"start_time\": \"2026-03-10 10:00:00\",\n  \"end_time\": \"2026-03-10 11:00:00\",\n  \"duration_minutes\": 60,\n  \"max_seats\": 5,\n  \"language\": \"English\",\n  \"price\": 30\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Get Session Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions/1", "host": ["{{base_url}}"], "path": ["mentor","sessions","1"] }
+              }
+            },
+            {
+              "name": "Start Session",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions/1/start", "host": ["{{base_url}}"], "path": ["mentor","sessions","1","start"] }
+              }
+            },
+            {
+              "name": "Complete Session",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions/1/complete", "host": ["{{base_url}}"], "path": ["mentor","sessions","1","complete"] }
+              }
+            },
+            {
+              "name": "Update Session",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions/1", "host": ["{{base_url}}"], "path": ["mentor","sessions","1"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Advanced Laravel Workshop — Updated\",\n  \"max_seats\": 8,\n  \"price\": 35\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Cancel Session",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions/1", "host": ["{{base_url}}"], "path": ["mentor","sessions","1"] }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Availability",
+          "item": [
+            {
+              "name": "Get Availability",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/availability", "host": ["{{base_url}}"], "path": ["mentor","availability"] }
+              }
+            },
+            {
+              "name": "Set Availability",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/availability", "host": ["{{base_url}}"], "path": ["mentor","availability"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"slots\": [\n    { \"day\": \"Monday\",    \"start_time\": \"09:00\", \"end_time\": \"17:00\" },\n    { \"day\": \"Wednesday\", \"start_time\": \"10:00\", \"end_time\": \"16:00\" },\n    { \"day\": \"Friday\",    \"start_time\": \"09:00\", \"end_time\": \"14:00\" }\n  ]\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Update Slot",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/availability/1", "host": ["{{base_url}}"], "path": ["mentor","availability","1"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"start_time\": \"08:00\",\n  \"end_time\": \"15:00\",\n  \"is_available\": true\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Delete Slot",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/availability/1", "host": ["{{base_url}}"], "path": ["mentor","availability","1"] }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Earnings",
+          "item": [
+            {
+              "name": "Get Earnings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/earnings", "host": ["{{base_url}}"], "path": ["mentor","earnings"] }
+              }
+            },
+            {
+              "name": "Get Earnings — Sessions Only",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/earnings?filter=sessions", "host": ["{{base_url}}"], "path": ["mentor","earnings"], "query": [{ "key": "filter", "value": "sessions" }] }
+              }
+            },
+            {
+              "name": "Withdraw",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/earnings/withdraw", "host": ["{{base_url}}"], "path": ["mentor","earnings","withdraw"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 100,\n  \"bank_account\": \"GB29 NWBK 6016 1331 9268 19\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Profile",
+          "item": [
+            {
+              "name": "Get Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/profile", "host": ["{{base_url}}"], "path": ["mentor","profile"] }
+              }
+            },
+            {
+              "name": "Update Profile",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/profile", "host": ["{{base_url}}"], "path": ["mentor","profile"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"Ahmed Al Mentor\",\n  \"phone\": \"+971501234567\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Dubai\",\n  \"designation\": \"Senior Full-Stack Developer\",\n  \"short_bio\": \"8+ years building web & mobile apps. I help developers level up fast.\",\n  \"specialization\": \"Full Stack Development\",\n  \"industry\": \"Technology\",\n  \"expertise_list\": [\"Laravel\", \"Vue.js\", \"React Native\", \"AWS\"],\n  \"preferred_student_level\": \"intermediate\",\n  \"languages_list\": [\"English\", \"Arabic\"],\n  \"price_per_hour\": 60,\n  \"experience_years\": \"8\",\n  \"availability\": [\n    { \"day\": \"Monday\",    \"start_time\": \"09:00\", \"end_time\": \"17:00\" },\n    { \"day\": \"Wednesday\", \"start_time\": \"10:00\", \"end_time\": \"16:00\" },\n    { \"day\": \"Friday\",    \"start_time\": \"09:00\", \"end_time\": \"14:00\" }\n  ]\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Upload Profile Photo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/profile/photo", "host": ["{{base_url}}"], "path": ["mentor","profile","photo"] },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{ "key": "photo", "type": "file", "src": "" }]
+                }
+              }
+            },
+            {
+              "name": "Upload Intro Video",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/profile/intro-video", "host": ["{{base_url}}"], "path": ["mentor","profile","intro-video"] },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{ "key": "video", "type": "file", "src": "" }]
+                }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Subscription",
+          "item": [
+            {
+              "name": "Get Subscription Plans",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] }
+              }
+            },
+            {
+              "name": "Subscribe",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"plan\": \"monthly\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Cancel Subscription",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Student",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/dashboard", "host": ["{{base_url}}"], "path": ["student","dashboard"] }
+          }
+        },
+
+        {
+          "name": "Sessions",
+          "item": [
+            {
+              "name": "My Bookings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/sessions", "host": ["{{base_url}}"], "path": ["student","sessions"] }
+              }
+            },
+            {
+              "name": "Book a Session",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/sessions/book", "host": ["{{base_url}}"], "path": ["student","sessions","book"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"session_id\": 1\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Cancel Booking",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/sessions/1", "host": ["{{base_url}}"], "path": ["student","sessions","1"] }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Courses",
+          "item": [
+            {
+              "name": "My Enrolled Courses",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/courses/my", "host": ["{{base_url}}"], "path": ["student","courses","my"] }
+              }
+            },
+            {
+              "name": "Completed Courses",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/courses/completed", "host": ["{{base_url}}"], "path": ["student","courses","completed"] }
+              }
+            },
+            {
+              "name": "Get Course Progress",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/courses/1/progress", "host": ["{{base_url}}"], "path": ["student","courses","1","progress"] }
+              }
+            },
+            {
+              "name": "Mark Lesson Complete",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/courses/1/lessons/1/complete", "host": ["{{base_url}}"], "path": ["student","courses","1","lessons","1","complete"] }
+              }
+            },
+            {
+              "name": "Enroll in Course",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/courses/enroll", "host": ["{{base_url}}"], "path": ["student","courses","enroll"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": 1\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Profile",
+          "item": [
+            {
+              "name": "Get Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/profile", "host": ["{{base_url}}"], "path": ["student","profile"] }
+              }
+            },
+            {
+              "name": "Update Profile",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/profile", "host": ["{{base_url}}"], "path": ["student","profile"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"Sara Al Student\",\n  \"phone\": \"+971509876543\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Dubai\",\n  \"bio\": \"Passionate about learning web development and AI.\",\n  \"education_level\": \"Bachelor of Computer Science\",\n  \"interests\": \"Web Development, AI, Mobile Apps\",\n  \"profile_language\": \"English\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Upload Profile Photo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/profile/photo", "host": ["{{base_url}}"], "path": ["student","profile","photo"] },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{ "key": "image", "type": "file", "src": "" }]
+                }
+              }
+            },
+            {
+              "name": "Change Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/profile/change-password", "host": ["{{base_url}}"], "path": ["student","profile","change-password"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"current_password\": \"password\",\n  \"new_password\": \"newpassword123\",\n  \"new_password_confirmation\": \"newpassword123\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Teacher",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/teacher/dashboard", "host": ["{{base_url}}"], "path": ["teacher","dashboard"] }
+          }
+        },
+
+        {
+          "name": "Courses",
+          "item": [
+            {
+              "name": "List My Courses",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/courses", "host": ["{{base_url}}"], "path": ["teacher","courses"] }
+              }
+            },
+            {
+              "name": "Create Course",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/courses", "host": ["{{base_url}}"], "path": ["teacher","courses"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Advanced Physics\",\n  \"description\": \"Deep dive into mechanics and thermodynamics.\",\n  \"category\": \"Science\",\n  \"language\": \"English\",\n  \"price\": 79.99,\n  \"duration\": \"15 hours\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Get Course Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/courses/1", "host": ["{{base_url}}"], "path": ["teacher","courses","1"] }
+              }
+            },
+            {
+              "name": "Update Course",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/courses/1", "host": ["{{base_url}}"], "path": ["teacher","courses","1"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Advanced Physics — Updated\",\n  \"price\": 89.99\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Publish Course",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/courses/1/publish", "host": ["{{base_url}}"], "path": ["teacher","courses","1","publish"] }
+              }
+            },
+            {
+              "name": "Upload Course Thumbnail",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/courses/1/thumbnail", "host": ["{{base_url}}"], "path": ["teacher","courses","1","thumbnail"] },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{ "key": "thumbnail", "type": "file", "src": "" }]
+                }
+              }
+            },
+            {
+              "name": "Archive Course",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/courses/1", "host": ["{{base_url}}"], "path": ["teacher","courses","1"] }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Lessons",
+          "item": [
+            {
+              "name": "Add Lesson to Course",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/courses/1/lessons", "host": ["{{base_url}}"], "path": ["teacher","courses","1","lessons"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Introduction to Forces\",\n  \"video_url\": \"https://example.com/videos/intro-forces\",\n  \"order\": 1,\n  \"description\": \"Learn about Newton's laws.\",\n  \"duration\": \"45 min\",\n  \"is_free\": true\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Update Lesson",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/lessons/1", "host": ["{{base_url}}"], "path": ["teacher","lessons","1"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Forces and Motion — Updated\",\n  \"is_free\": false\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Upload Lesson Video",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/lessons/1/video", "host": ["{{base_url}}"], "path": ["teacher","lessons","1","video"] },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{ "key": "video", "type": "file", "src": "" }]
+                }
+              }
+            },
+            {
+              "name": "Delete Lesson",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/lessons/1", "host": ["{{base_url}}"], "path": ["teacher","lessons","1"] }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Earnings",
+          "item": [
+            {
+              "name": "Get Earnings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/earnings", "host": ["{{base_url}}"], "path": ["teacher","earnings"] }
+              }
+            },
+            {
+              "name": "Withdraw",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/earnings/withdraw", "host": ["{{base_url}}"], "path": ["teacher","earnings","withdraw"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 200,\n  \"bank_account\": \"PK36 SCBL 0000 0011 2345 6702\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Profile",
+          "item": [
+            {
+              "name": "Get Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/profile", "host": ["{{base_url}}"], "path": ["teacher","profile"] }
+              }
+            },
+            {
+              "name": "Update Profile",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/profile", "host": ["{{base_url}}"], "path": ["teacher","profile"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"Prof. Hassan\",\n  \"phone\": \"+92300123456\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Karachi\",\n  \"designation\": \"Associate Professor\",\n  \"subject\": \"Physics\",\n  \"subject_field\": \"Quantum Mechanics & Thermodynamics\",\n  \"short_bio\": \"10 years teaching Physics at university level. Passionate about making complex concepts simple.\",\n  \"degree\": \"PhD Physics — MIT\",\n  \"experience_years\": \"10\",\n  \"expertise_list\": [\"Quantum Physics\", \"Thermodynamics\", \"Mechanics\", \"Electromagnetism\"],\n  \"languages_list\": [\"English\", \"Urdu\"]\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Upload Profile Photo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/profile/photo", "host": ["{{base_url}}"], "path": ["teacher","profile","photo"] },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{ "key": "photo", "type": "file", "src": "" }]
+                }
+              }
+            },
+            {
+              "name": "Upload Intro Video",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/profile/intro-video", "host": ["{{base_url}}"], "path": ["teacher","profile","intro-video"] },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{ "key": "video", "type": "file", "src": "" }]
+                }
+              }
+            },
+            {
+              "name": "Change Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/profile/change-password", "host": ["{{base_url}}"], "path": ["teacher","profile","change-password"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"current_password\": \"password\",\n  \"new_password\": \"newpassword123\",\n  \"new_password_confirmation\": \"newpassword123\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Browse All Courses",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/courses?search=math&category=Mathematics",
+              "host": ["{{base_url}}"], "path": ["courses"],
+              "query": [
+                { "key": "search", "value": "math" },
+                { "key": "category", "value": "Mathematics" },
+                { "key": "language", "value": "English", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Course Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/courses/1", "host": ["{{base_url}}"], "path": ["courses","1"] }
+          }
+        },
+        {
+          "name": "Browse Mentors",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/mentors?specialization=web&verified=1",
+              "host": ["{{base_url}}"], "path": ["mentors"],
+              "query": [
+                { "key": "specialization", "value": "web" },
+                { "key": "verified", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mentor Public Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/mentors/1", "host": ["{{base_url}}"], "path": ["mentors","1"] }
+          }
+        },
+        {
+          "name": "Mentor Availability (Public)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/mentors/1/availability", "host": ["{{base_url}}"], "path": ["mentors","1","availability"] }
+          }
+        },
+        {
+          "name": "Teacher Public Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/teachers/1", "host": ["{{base_url}}"], "path": ["teachers","1"] }
+          }
+        },
+        {
+          "name": "Search (All Types)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/search?q=laravel&type=all",
+              "host": ["{{base_url}}"], "path": ["search"],
+              "query": [
+                { "key": "q", "value": "laravel" },
+                { "key": "type", "value": "all" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Mentors Only",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/search?q=python&type=mentor",
+              "host": ["{{base_url}}"], "path": ["search"],
+              "query": [
+                { "key": "q", "value": "python" },
+                { "key": "type", "value": "mentor" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Privacy Policy",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/privacy-policy", "host": ["{{base_url}}"], "path": ["privacy-policy"] }
+          }
+        },
+        {
+          "name": "Reviews for User",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews/user/1", "host": ["{{base_url}}"], "path": ["reviews","user","1"] }
+          }
+        },
+        {
+          "name": "Reviews for Course",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews/course/1", "host": ["{{base_url}}"], "path": ["reviews","course","1"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/notifications", "host": ["{{base_url}}"], "path": ["notifications"] }
+          }
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/notifications/1/read", "host": ["{{base_url}}"], "path": ["notifications","1","read"] }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/notifications/read-all", "host": ["{{base_url}}"], "path": ["notifications","read-all"] }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/notifications/1", "host": ["{{base_url}}"], "path": ["notifications","1"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🤖 AI Chat",
+      "item": [
+        {
+          "name": "Chat History",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/ai-chat", "host": ["{{base_url}}"], "path": ["ai-chat"] }
+          }
+        },
+        {
+          "name": "Ask a Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/ai-chat", "host": ["{{base_url}}"], "path": ["ai-chat"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"Explain the concept of recursion in programming with a simple example.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Clear Chat History",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/ai-chat", "host": ["{{base_url}}"], "path": ["ai-chat"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Submit Review for Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to_user_id\": 1,\n  \"session_id\": 1,\n  \"rating\": 5,\n  \"comment\": \"Excellent session! Very clear explanations.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Submit Review for Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to_user_id\": 2,\n  \"course_id\": 1,\n  \"rating\": 4,\n  \"comment\": \"Great course content and well structured.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Support",
+      "item": [
+        {
+          "name": "My Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/support", "host": ["{{base_url}}"], "path": ["support"] }
+          }
+        },
+        {
+          "name": "Create Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/support", "host": ["{{base_url}}"], "path": ["support"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Payment not processed\",\n  \"message\": \"I enrolled in the Mathematics course but my payment did not go through even though my card was charged.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "View Ticket Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/support/1", "host": ["{{base_url}}"], "path": ["support","1"] }
+          }
+        },
+        {
+          "name": "Close Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/support/1/close", "host": ["{{base_url}}"], "path": ["support","1","close"] }
+          }
+        }
+      ]
+    }
+
+  ]
+}
