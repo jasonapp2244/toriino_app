@@ -48,7 +48,7 @@ class AuthController extends Controller
                 'full_name' => $request->full_name,
                 'name'      => $request->full_name,
                 'password'  => Hash::make($request->password),
-                'role'      => $request->role ?? 'existing->role',
+                'role'      => $request->role ?? $existing->role,
             ]);
             $user = $existing->fresh();
         }
@@ -91,11 +91,11 @@ class AuthController extends Controller
         $user->update(['is_verified' => true, 'email_verified_at' => now()]);
         $user->clearOtp();
 
-        // Assign role (stored in users.role column + Spatie)
+        // Always sync Spatie role to match users.role column.
+        // Using syncRoles() ensures re-registration with a different role
+        // (e.g., mentor → teacher) is handled correctly.
         $role = $user->role ?? 'student';
-        if ($user->getRoleNames()->isEmpty()) {
-            $user->assignRole($role);
-        }
+        $user->syncRoles([$role]);
 
         // Auto-create role-specific profile
         $this->createRoleProfile($user, $role);
@@ -500,9 +500,127 @@ class AuthController extends Controller
             'required_fields' => $requiredFields,
             'target_profile'  => $targetProfile->fresh(),
             'next_step'       => count($missingFields) > 0
-                ? "Complete the missing fields using PUT /api/v1/{$switchTo}/profile, then call POST /api/v1/switch-role/confirm"
+                ? "Complete the missing fields using PUT /api/v1/switch-role/profile, then call POST /api/v1/switch-role/confirm"
                 : "All fields ready. Call POST /api/v1/switch-role/confirm to complete the switch.",
         ], "Preview ready. Please complete the {$switchTo} profile to continue.");
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // SWITCH ROLE — STEP 2: Update target profile
+    //
+    // Accessible while the user still holds their CURRENT role.
+    // Fills in missing fields for the PENDING (target) profile.
+    // No role middleware needed — pending_role check is the gate.
+    // ─────────────────────────────────────────────────────────────
+    public function switchRoleUpdateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->pending_role) {
+            return ApiResponse::error(
+                'No pending role switch found. Call POST /switch-role/preview first.',
+                400
+            );
+        }
+
+        $switchTo = $user->pending_role;
+
+        if ($switchTo === 'teacher') {
+            $request->validate([
+                'subject'          => 'sometimes|string|max:255',
+                'subject_field'    => 'sometimes|string|max:255',
+                'short_bio'        => 'sometimes|string|max:1000',
+                'degree'           => 'sometimes|string|max:255',
+                'designation'      => 'sometimes|string|max:255',
+                'experience_years' => 'sometimes|string|max:20',
+                'expertise_list'   => 'sometimes|array',
+                'expertise_list.*' => 'string|max:100',
+                'languages_list'   => 'sometimes|array',
+                'languages_list.*' => 'string|max:50',
+            ]);
+
+            $updates = array_filter([
+                'subject'          => $request->subject,
+                'subject_field'    => $request->subject_field,
+                'short_bio'        => $request->short_bio,
+                'degree'           => $request->degree,
+                'designation'      => $request->designation,
+                'experience_years' => $request->experience_years,
+                'expertise_list'   => $request->expertise_list,
+                'languages_list'   => $request->languages_list,
+                'languages'        => $request->languages_list
+                    ? implode(', ', $request->languages_list)
+                    : null,
+            ], fn($v) => !is_null($v));
+
+            $profile = $user->teacherProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                $updates
+            );
+
+            $missing  = $profile->fresh()->missingFields();
+            $complete = count($missing) === 0;
+
+            if ($complete) {
+                $profile->update(['profile_setup_complete' => true]);
+            }
+
+        } else { // mentor
+
+            $request->validate([
+                'designation'             => 'sometimes|string|max:255',
+                'short_bio'               => 'sometimes|string|max:1000',
+                'specialization'          => 'sometimes|string|max:255',
+                'industry'                => 'sometimes|string|max:100',
+                'price_per_hour'          => 'sometimes|numeric|min:0',
+                'experience_years'        => 'sometimes|string|max:20',
+                'preferred_student_level' => 'sometimes|in:beginner,intermediate,advanced,all',
+                'expertise_list'          => 'sometimes|array',
+                'expertise_list.*'        => 'string|max:100',
+                'languages_list'          => 'sometimes|array',
+                'languages_list.*'        => 'string|max:50',
+            ]);
+
+            $updates = array_filter([
+                'designation'             => $request->designation,
+                'short_bio'               => $request->short_bio,
+                'specialization'          => $request->specialization,
+                'industry'                => $request->industry,
+                'price_per_hour'          => $request->price_per_hour,
+                'experience_years'        => $request->experience_years,
+                'preferred_student_level' => $request->preferred_student_level,
+                'expertise_list'          => $request->expertise_list,
+                'languages_list'          => $request->languages_list,
+                'languages'               => $request->languages_list
+                    ? implode(', ', $request->languages_list)
+                    : null,
+            ], fn($v) => !is_null($v));
+
+            $profile = $user->mentorProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                $updates
+            );
+
+            $missing  = $profile->fresh()->missingFields();
+            $complete = count($missing) === 0;
+
+            if ($complete) {
+                $profile->update(['profile_setup_complete' => true]);
+            }
+        }
+
+        return ApiResponse::success([
+            'pending_role'           => $switchTo,
+            'profile_setup_complete' => $complete,
+            'missing_fields'         => $missing,
+            'profile'                => $profile->fresh(),
+            'next_step'              => $complete
+                ? 'Profile complete! Call POST /api/v1/switch-role/confirm to finalize the switch.'
+                : 'Fill the remaining fields, then call POST /api/v1/switch-role/confirm.',
+        ], $complete
+            ? 'Target profile complete. Ready to confirm role switch.'
+            : 'Profile updated. Some fields are still missing.'
+        );
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -540,7 +658,7 @@ class AuthController extends Controller
                 422,
                 [
                     'missing_fields' => $missing,
-                    'hint'           => "Update your profile using PUT /api/v1/{$switchTo}/profile",
+                    'hint'           => "Update your profile using PUT /api/v1/switch-role/profile",
                 ]
             );
         }

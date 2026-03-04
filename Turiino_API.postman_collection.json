@@ -272,20 +272,37 @@
           }
         },
         {
-          "name": "Switch Role — STEP 2: Complete Teacher Profile (fill missing fields)",
+          "name": "Switch Role — STEP 2a: Fill Missing Fields (Mentor → Teacher)",
           "request": {
             "method": "PUT",
             "header": [
               { "key": "Accept", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
-            "url": { "raw": "{{base_url}}/teacher/profile", "host": ["{{base_url}}"], "path": ["teacher","profile"] },
+            "url": { "raw": "{{base_url}}/switch-role/profile", "host": ["{{base_url}}"], "path": ["switch-role","profile"] },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"subject\": \"Mathematics\",\n  \"subject_field\": \"Algebra & Calculus\",\n  \"short_bio\": \"Experienced mentor now teaching structured courses.\",\n  \"degree\": \"MSc Mathematics\",\n  \"expertise_list\": [\"Algebra\", \"Calculus\", \"Trigonometry\"],\n  \"languages_list\": [\"English\", \"Arabic\"]\n}",
-              "options": { "raw": { "language": "json" } },
-              "description": "STEP 2: Fill in teacher-specific fields. Profile auto-marks complete when all required fields are present."
-            }
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "STEP 2: Works while you still hold your CURRENT role. Fills missing fields for the PENDING (target) teacher profile. Returns profile_setup_complete flag."
+          }
+        },
+        {
+          "name": "Switch Role — STEP 2b: Fill Missing Fields (Teacher → Mentor)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/switch-role/profile", "host": ["{{base_url}}"], "path": ["switch-role","profile"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"designation\": \"Senior Software Engineer\",\n  \"short_bio\": \"Teacher now offering 1-on-1 mentoring sessions.\",\n  \"price_per_hour\": 45,\n  \"industry\": \"Technology\",\n  \"preferred_student_level\": \"intermediate\",\n  \"expertise_list\": [\"Laravel\", \"Vue.js\", \"MySQL\"],\n  \"languages_list\": [\"English\", \"Arabic\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "STEP 2: Works while you still hold your CURRENT role. Fills missing fields for the PENDING (target) mentor profile."
           }
         },
         {

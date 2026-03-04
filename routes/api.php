@@ -77,11 +77,11 @@ Route::prefix('v1')->group(function () {
         Route::post('change-password',    [AuthController::class, 'changePassword']);
         Route::post('update-device-token',[AuthController::class, 'updateDeviceToken']);
 
-        // Switch Role — 3-step flow
-        Route::post('switch-role/preview', [AuthController::class, 'switchRolePreview']);  // STEP 1
-        // STEP 2 → PUT /mentor/profile  or  PUT /teacher/profile  (fill missing fields)
-        Route::post('switch-role/confirm', [AuthController::class, 'switchRoleConfirm']);  // STEP 3
-        Route::post('switch-role/cancel',  [AuthController::class, 'switchRoleCancel']);   // Cancel
+        // Switch Role — 3-step flow (all role-agnostic: only auth:sanctum required)
+        Route::post('switch-role/preview', [AuthController::class, 'switchRolePreview']);       // STEP 1
+        Route::put('switch-role/profile',  [AuthController::class, 'switchRoleUpdateProfile']); // STEP 2 ← NEW
+        Route::post('switch-role/confirm', [AuthController::class, 'switchRoleConfirm']);       // STEP 3
+        Route::post('switch-role/cancel',  [AuthController::class, 'switchRoleCancel']);        // Cancel
 
         // ───────────────────────────────────────────────────────
         // MENTOR  (role: mentor)

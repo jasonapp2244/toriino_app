@@ -11,7 +11,9 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
+        // dd($request->all());
         if (!$request->user()) {
+            // dd('here');
             return ApiResponse::unauthorized();
         }
 

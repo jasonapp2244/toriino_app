@@ -27,6 +27,7 @@ class TeacherProfileController extends Controller
 
     public function update(Request $request): JsonResponse
     {
+        // dd($request->all());
         $request->validate([
             'full_name'        => 'sometimes|string|max:255',
             'phone'            => 'sometimes|string|max:20',
