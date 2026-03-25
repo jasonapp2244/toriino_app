@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 // Auth
@@ -38,6 +39,21 @@ Route::prefix('v1')->group(function () {
     // ═══════════════════════════════════════════════════════════
     // PUBLIC — no auth required
     // ═══════════════════════════════════════════════════════════
+
+    //api test
+    Route::get('api-test', function () {
+        return response()->json([
+            'message' => 'API is working',
+        ]);
+    });
+
+    //cache clear
+    Route::get('cache-clear', function () {
+        Artisan::call('cache:clear');
+        return response()->json([
+            'message' => 'Cache cleared',
+        ]);
+    });
 
     // Auth
     Route::post('register',        [AuthController::class, 'register']);
