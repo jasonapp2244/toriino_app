@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Turiino App API",
-    "description": "Complete API collection for Turiino App — Auth, Mentor, Teacher, Student, Common endpoints",
+    "description": "Complete API collection for Turiino App — Auth, Mentor, Teacher, Student, Chat (Reverb), Common endpoints.\n\nBase URL variable: {{base_url}}  →  http://127.0.0.1:8001/api/v1\nAuth token variable: {{token}}  →  set automatically by Login / OTP-Verify test scripts\n\nReverb WebSocket: ws://127.0.0.1:8080/app/toriino_ws_key_2026\nChannel auth: POST {{base_url}}/broadcasting/auth",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -11,10 +11,10 @@
   "item": [
 
     {
-      "name": " Auth",
+      "name": "Auth",
       "item": [
         {
-          "name": "1. Register (sends OTP)",
+          "name": "Register (sends OTP)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Accept", "value": "application/json" }],
@@ -27,20 +27,11 @@
           }
         },
         {
-          "name": "2. Verify OTP",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if(json.data && json.data.token){",
-                  "  pm.collectionVariables.set('token', json.data.token);",
-                  "}"
-                ]
-              }
-            }
-          ],
+          "name": "Verify OTP",
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["var j=pm.response.json();if(j.data&&j.data.token){pm.collectionVariables.set('token',j.data.token);}"] }
+          }],
           "request": {
             "method": "POST",
             "header": [{ "key": "Accept", "value": "application/json" }],
@@ -53,7 +44,7 @@
           }
         },
         {
-          "name": "3. Resend OTP",
+          "name": "Resend OTP",
           "request": {
             "method": "POST",
             "header": [{ "key": "Accept", "value": "application/json" }],
@@ -67,19 +58,10 @@
         },
         {
           "name": "Login — Mentor",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if(json.data && json.data.token){",
-                  "  pm.collectionVariables.set('token', json.data.token);",
-                  "}"
-                ]
-              }
-            }
-          ],
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["var j=pm.response.json();if(j.data&&j.data.token){pm.collectionVariables.set('token',j.data.token);}"] }
+          }],
           "request": {
             "method": "POST",
             "header": [{ "key": "Accept", "value": "application/json" }],
@@ -93,19 +75,10 @@
         },
         {
           "name": "Login — Teacher",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if(json.data && json.data.token){",
-                  "  pm.collectionVariables.set('token', json.data.token);",
-                  "}"
-                ]
-              }
-            }
-          ],
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["var j=pm.response.json();if(j.data&&j.data.token){pm.collectionVariables.set('token',j.data.token);}"] }
+          }],
           "request": {
             "method": "POST",
             "header": [{ "key": "Accept", "value": "application/json" }],
@@ -119,19 +92,10 @@
         },
         {
           "name": "Login — Student",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if(json.data && json.data.token){",
-                  "  pm.collectionVariables.set('token', json.data.token);",
-                  "}"
-                ]
-              }
-            }
-          ],
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["var j=pm.response.json();if(j.data&&j.data.token){pm.collectionVariables.set('token',j.data.token);}"] }
+          }],
           "request": {
             "method": "POST",
             "header": [{ "key": "Accept", "value": "application/json" }],
@@ -144,20 +108,11 @@
           }
         },
         {
-          "name": "Social Login (Google/Apple)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if(json.data && json.data.token){",
-                  "  pm.collectionVariables.set('token', json.data.token);",
-                  "}"
-                ]
-              }
-            }
-          ],
+          "name": "Social Login (Google / Apple)",
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["var j=pm.response.json();if(j.data&&j.data.token){pm.collectionVariables.set('token',j.data.token);}"] }
+          }],
           "request": {
             "method": "POST",
             "header": [{ "key": "Accept", "value": "application/json" }],
@@ -183,7 +138,7 @@
           }
         },
         {
-          "name": "Reset Password (verify OTP + new password)",
+          "name": "Reset Password",
           "request": {
             "method": "POST",
             "header": [{ "key": "Accept", "value": "application/json" }],
@@ -196,7 +151,7 @@
           }
         },
         {
-          "name": "Me (Get Authenticated User)",
+          "name": "Me (Authenticated User)",
           "request": {
             "method": "GET",
             "header": [
@@ -223,22 +178,6 @@
           }
         },
         {
-          "name": "Update Device Token (FCM)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
-            ],
-            "url": { "raw": "{{base_url}}/update-device-token", "host": ["{{base_url}}"], "path": ["update-device-token"] },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fcm_token\": \"new_fcm_token_xyz\",\n  \"device_id\": \"device_abc_123\",\n  \"device_type\": \"android\"\n}",
-              "options": { "raw": { "language": "json" } }
-            }
-          }
-        },
-        {
           "name": "Change Password",
           "request": {
             "method": "POST",
@@ -255,7 +194,23 @@
           }
         },
         {
-          "name": "Switch Role — STEP 1: Preview (copy fields, get missing list)",
+          "name": "Update Device Token (FCM)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/update-device-token", "host": ["{{base_url}}"], "path": ["update-device-token"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcm_token\": \"new_fcm_token_xyz\",\n  \"device_id\": \"device_abc_123\",\n  \"device_type\": \"android\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Switch Role — STEP 1: Preview",
           "request": {
             "method": "POST",
             "header": [
@@ -268,11 +223,11 @@
               "raw": "{\n  \"switch_to\": \"teacher\"\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "description": "STEP 1: Copies common fields from current profile. Returns missing_fields list. Role is NOT changed yet."
+            "description": "Copies common fields from current profile. Returns missing_fields list. Role NOT changed yet."
           }
         },
         {
-          "name": "Switch Role — STEP 2a: Fill Missing Fields (Mentor → Teacher)",
+          "name": "Switch Role — STEP 2a: Fill Fields (Mentor → Teacher)",
           "request": {
             "method": "PUT",
             "header": [
@@ -284,12 +239,11 @@
               "mode": "raw",
               "raw": "{\n  \"subject\": \"Mathematics\",\n  \"subject_field\": \"Algebra & Calculus\",\n  \"short_bio\": \"Experienced mentor now teaching structured courses.\",\n  \"degree\": \"MSc Mathematics\",\n  \"expertise_list\": [\"Algebra\", \"Calculus\", \"Trigonometry\"],\n  \"languages_list\": [\"English\", \"Arabic\"]\n}",
               "options": { "raw": { "language": "json" } }
-            },
-            "description": "STEP 2: Works while you still hold your CURRENT role. Fills missing fields for the PENDING (target) teacher profile. Returns profile_setup_complete flag."
+            }
           }
         },
         {
-          "name": "Switch Role — STEP 2b: Fill Missing Fields (Teacher → Mentor)",
+          "name": "Switch Role — STEP 2b: Fill Fields (Teacher → Mentor)",
           "request": {
             "method": "PUT",
             "header": [
@@ -301,12 +255,11 @@
               "mode": "raw",
               "raw": "{\n  \"designation\": \"Senior Software Engineer\",\n  \"short_bio\": \"Teacher now offering 1-on-1 mentoring sessions.\",\n  \"price_per_hour\": 45,\n  \"industry\": \"Technology\",\n  \"preferred_student_level\": \"intermediate\",\n  \"expertise_list\": [\"Laravel\", \"Vue.js\", \"MySQL\"],\n  \"languages_list\": [\"English\", \"Arabic\"]\n}",
               "options": { "raw": { "language": "json" } }
-            },
-            "description": "STEP 2: Works while you still hold your CURRENT role. Fills missing fields for the PENDING (target) mentor profile."
+            }
           }
         },
         {
-          "name": "Switch Role — STEP 3: Confirm (finalise role change)",
+          "name": "Switch Role — STEP 3: Confirm",
           "request": {
             "method": "POST",
             "header": [
@@ -314,19 +267,18 @@
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "url": { "raw": "{{base_url}}/switch-role/confirm", "host": ["{{base_url}}"], "path": ["switch-role","confirm"] },
-            "description": "STEP 3: Validates profile is complete, changes role, resets subscription."
+            "description": "Validates profile is complete, changes role, resets subscription."
           }
         },
         {
-          "name": "Switch Role — Cancel (abort pending switch)",
+          "name": "Switch Role — Cancel",
           "request": {
             "method": "POST",
             "header": [
               { "key": "Accept", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
-            "url": { "raw": "{{base_url}}/switch-role/cancel", "host": ["{{base_url}}"], "path": ["switch-role","cancel"] },
-            "description": "Cancel a pending switch. User remains in their current role."
+            "url": { "raw": "{{base_url}}/switch-role/cancel", "host": ["{{base_url}}"], "path": ["switch-role","cancel"] }
           }
         },
         {
@@ -362,14 +314,49 @@
           "name": "Sessions",
           "item": [
             {
-              "name": "List Sessions",
+              "name": "List Sessions (all)",
               "request": {
                 "method": "GET",
                 "header": [
                   { "key": "Accept", "value": "application/json" },
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
-                "url": { "raw": "{{base_url}}/mentor/sessions", "host": ["{{base_url}}"], "path": ["mentor","sessions"] }
+                "url": {
+                  "raw": "{{base_url}}/mentor/sessions?period=monthly",
+                  "host": ["{{base_url}}"], "path": ["mentor","sessions"],
+                  "query": [{ "key": "period", "value": "monthly", "description": "weekly | monthly | yearly | all" }]
+                },
+                "description": "Returns stats (total + upcoming), all upcoming sessions, and paginated history. ?period filters the history section."
+              }
+            },
+            {
+              "name": "List Sessions — History Weekly",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/mentor/sessions?period=weekly",
+                  "host": ["{{base_url}}"], "path": ["mentor","sessions"],
+                  "query": [{ "key": "period", "value": "weekly" }]
+                }
+              }
+            },
+            {
+              "name": "Calendar Sessions (by date)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/mentor/sessions/calendar?date=2026-05-10",
+                  "host": ["{{base_url}}"], "path": ["mentor","sessions","calendar"],
+                  "query": [{ "key": "date", "value": "2026-05-10", "description": "YYYY-MM-DD" }]
+                }
               }
             },
             {
@@ -383,9 +370,10 @@
                 "url": { "raw": "{{base_url}}/mentor/sessions", "host": ["{{base_url}}"], "path": ["mentor","sessions"] },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Advanced Laravel Workshop\",\n  \"type\": \"group\",\n  \"start_time\": \"2026-03-10 10:00:00\",\n  \"end_time\": \"2026-03-10 11:00:00\",\n  \"duration_minutes\": 60,\n  \"max_seats\": 5,\n  \"language\": \"English\",\n  \"price\": 30\n}",
+                  "raw": "{\n  \"title\": \"Advanced Laravel Workshop\",\n  \"type\": \"group\",\n  \"start_time\": \"2026-05-10 15:00:00\",\n  \"end_time\": \"2026-05-10 16:00:00\",\n  \"duration_minutes\": 60,\n  \"max_seats\": 5,\n  \"language\": \"English / Arabic\",\n  \"price\": 30\n}",
                   "options": { "raw": { "language": "json" } }
-                }
+                },
+                "description": "type: individual | group. max_seats capped at 5 for group. Requires active subscription."
               }
             },
             {
@@ -397,6 +385,22 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/mentor/sessions/1", "host": ["{{base_url}}"], "path": ["mentor","sessions","1"] }
+              }
+            },
+            {
+              "name": "Update Session",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions/1", "host": ["{{base_url}}"], "path": ["mentor","sessions","1"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Advanced Laravel Workshop — Updated\",\n  \"max_seats\": 4,\n  \"price\": 35\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
               }
             },
             {
@@ -418,23 +422,8 @@
                   { "key": "Accept", "value": "application/json" },
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
-                "url": { "raw": "{{base_url}}/mentor/sessions/1/complete", "host": ["{{base_url}}"], "path": ["mentor","sessions","1","complete"] }
-              }
-            },
-            {
-              "name": "Update Session",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  { "key": "Accept", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{token}}" }
-                ],
-                "url": { "raw": "{{base_url}}/mentor/sessions/1", "host": ["{{base_url}}"], "path": ["mentor","sessions","1"] },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Advanced Laravel Workshop — Updated\",\n  \"max_seats\": 8,\n  \"price\": 35\n}",
-                  "options": { "raw": { "language": "json" } }
-                }
+                "url": { "raw": "{{base_url}}/mentor/sessions/1/complete", "host": ["{{base_url}}"], "path": ["mentor","sessions","1","complete"] },
+                "description": "Marks session completed and creates Earning records per confirmed booking."
               }
             },
             {
@@ -446,6 +435,30 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/mentor/sessions/1", "host": ["{{base_url}}"], "path": ["mentor","sessions","1"] }
+              }
+            },
+            {
+              "name": "Get Join Key (Group session)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions/1/join-key", "host": ["{{base_url}}"], "path": ["mentor","sessions","1","join-key"] },
+                "description": "Returns the join key to share with group session students."
+              }
+            },
+            {
+              "name": "Regenerate Join Key (Group session)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/sessions/1/regenerate-key", "host": ["{{base_url}}"], "path": ["mentor","sessions","1","regenerate-key"] },
+                "description": "Invalidates old key and generates a new one. Only for upcoming group sessions."
               }
             }
           ]
@@ -466,7 +479,7 @@
               }
             },
             {
-              "name": "Set Availability",
+              "name": "Set Availability (batch)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -476,7 +489,7 @@
                 "url": { "raw": "{{base_url}}/mentor/availability", "host": ["{{base_url}}"], "path": ["mentor","availability"] },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"slots\": [\n    { \"day\": \"Monday\",    \"start_time\": \"09:00\", \"end_time\": \"17:00\" },\n    { \"day\": \"Wednesday\", \"start_time\": \"10:00\", \"end_time\": \"16:00\" },\n    { \"day\": \"Friday\",    \"start_time\": \"09:00\", \"end_time\": \"14:00\" }\n  ]\n}",
+                  "raw": "{\n  \"slots\": [\n    { \"day\": \"Monday\",    \"start_time\": \"09:00\", \"end_time\": \"17:00\", \"min_students\": 1, \"max_students\": 5 },\n    { \"day\": \"Wednesday\", \"start_time\": \"10:00\", \"end_time\": \"16:00\", \"min_students\": 1, \"max_students\": 3 },\n    { \"day\": \"Friday\",    \"start_time\": \"09:00\", \"end_time\": \"14:00\" }\n  ]\n}",
                   "options": { "raw": { "language": "json" } }
                 }
               }
@@ -492,7 +505,7 @@
                 "url": { "raw": "{{base_url}}/mentor/availability/1", "host": ["{{base_url}}"], "path": ["mentor","availability","1"] },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"start_time\": \"08:00\",\n  \"end_time\": \"15:00\",\n  \"is_available\": true\n}",
+                  "raw": "{\n  \"start_time\": \"08:00\",\n  \"end_time\": \"15:00\",\n  \"is_available\": true,\n  \"min_students\": 1,\n  \"max_students\": 4\n}",
                   "options": { "raw": { "language": "json" } }
                 }
               }
@@ -512,6 +525,50 @@
         },
 
         {
+          "name": "Subscription",
+          "item": [
+            {
+              "name": "Get Subscription Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] }
+              }
+            },
+            {
+              "name": "Subscribe",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"plan\": \"monthly\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Cancel Subscription",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] }
+              }
+            }
+          ]
+        },
+
+        {
           "name": "Earnings",
           "item": [
             {
@@ -523,17 +580,6 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/mentor/earnings", "host": ["{{base_url}}"], "path": ["mentor","earnings"] }
-              }
-            },
-            {
-              "name": "Get Earnings — Sessions Only",
-              "request": {
-                "method": "GET",
-                "header": [
-                  { "key": "Accept", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{token}}" }
-                ],
-                "url": { "raw": "{{base_url}}/mentor/earnings?filter=sessions", "host": ["{{base_url}}"], "path": ["mentor","earnings"], "query": [{ "key": "filter", "value": "sessions" }] }
               }
             },
             {
@@ -580,7 +626,7 @@
                 "url": { "raw": "{{base_url}}/mentor/profile", "host": ["{{base_url}}"], "path": ["mentor","profile"] },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"full_name\": \"Ahmed Al Mentor\",\n  \"phone\": \"+971501234567\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Dubai\",\n  \"designation\": \"Senior Full-Stack Developer\",\n  \"short_bio\": \"8+ years building web & mobile apps. I help developers level up fast.\",\n  \"specialization\": \"Full Stack Development\",\n  \"industry\": \"Technology\",\n  \"expertise_list\": [\"Laravel\", \"Vue.js\", \"React Native\", \"AWS\"],\n  \"preferred_student_level\": \"intermediate\",\n  \"languages_list\": [\"English\", \"Arabic\"],\n  \"price_per_hour\": 60,\n  \"experience_years\": \"8\",\n  \"availability\": [\n    { \"day\": \"Monday\",    \"start_time\": \"09:00\", \"end_time\": \"17:00\" },\n    { \"day\": \"Wednesday\", \"start_time\": \"10:00\", \"end_time\": \"16:00\" },\n    { \"day\": \"Friday\",    \"start_time\": \"09:00\", \"end_time\": \"14:00\" }\n  ]\n}",
+                  "raw": "{\n  \"full_name\": \"Ahmed Al Mentor\",\n  \"phone\": \"+971501234567\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Dubai\",\n  \"designation\": \"Senior Full-Stack Developer\",\n  \"short_bio\": \"8+ years building web & mobile apps.\",\n  \"industry\": \"Technology\",\n  \"expertise_list\": [\"Laravel\", \"Vue.js\", \"React Native\"],\n  \"preferred_student_level\": \"intermediate\",\n  \"languages_list\": [\"English\", \"Arabic\"],\n  \"price_per_hour\": 60,\n  \"experience_years\": \"8\"\n}",
                   "options": { "raw": { "language": "json" } }
                 }
               }
@@ -594,10 +640,7 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/mentor/profile/photo", "host": ["{{base_url}}"], "path": ["mentor","profile","photo"] },
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "photo", "type": "file", "src": "" }]
-                }
+                "body": { "mode": "formdata", "formdata": [{ "key": "photo", "type": "file", "src": "" }] }
               }
             },
             {
@@ -609,54 +652,7 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/mentor/profile/intro-video", "host": ["{{base_url}}"], "path": ["mentor","profile","intro-video"] },
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "video", "type": "file", "src": "" }]
-                }
-              }
-            }
-          ]
-        },
-
-        {
-          "name": "Subscription",
-          "item": [
-            {
-              "name": "Get Subscription Plans",
-              "request": {
-                "method": "GET",
-                "header": [
-                  { "key": "Accept", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{token}}" }
-                ],
-                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] }
-              }
-            },
-            {
-              "name": "Subscribe",
-              "request": {
-                "method": "POST",
-                "header": [
-                  { "key": "Accept", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{token}}" }
-                ],
-                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"plan\": \"monthly\"\n}",
-                  "options": { "raw": { "language": "json" } }
-                }
-              }
-            },
-            {
-              "name": "Cancel Subscription",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  { "key": "Accept", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{token}}" }
-                ],
-                "url": { "raw": "{{base_url}}/mentor/subscription", "host": ["{{base_url}}"], "path": ["mentor","subscription"] }
+                "body": { "mode": "formdata", "formdata": [{ "key": "video", "type": "file", "src": "" }] }
               }
             }
           ]
@@ -683,14 +679,47 @@
           "name": "Sessions",
           "item": [
             {
-              "name": "My Bookings",
+              "name": "My Bookings (all)",
               "request": {
                 "method": "GET",
                 "header": [
                   { "key": "Accept", "value": "application/json" },
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
-                "url": { "raw": "{{base_url}}/student/sessions", "host": ["{{base_url}}"], "path": ["student","sessions"] }
+                "url": {
+                  "raw": "{{base_url}}/student/sessions",
+                  "host": ["{{base_url}}"], "path": ["student","sessions"]
+                }
+              }
+            },
+            {
+              "name": "My Bookings — Upcoming only",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/student/sessions?status=confirmed&period=monthly",
+                  "host": ["{{base_url}}"], "path": ["student","sessions"],
+                  "query": [
+                    { "key": "status", "value": "confirmed", "description": "upcoming | completed | cancelled | all" },
+                    { "key": "period", "value": "monthly", "description": "weekly | monthly | yearly" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Booking Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/sessions/1", "host": ["{{base_url}}"], "path": ["student","sessions","1"] },
+                "description": "Returns booking + session detail + mentor info + whether student can review."
               }
             },
             {
@@ -707,6 +736,39 @@
                   "raw": "{\n  \"session_id\": 1\n}",
                   "options": { "raw": { "language": "json" } }
                 }
+              }
+            },
+            {
+              "name": "Join Group Session by Key",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/sessions/join-by-key", "host": ["{{base_url}}"], "path": ["student","sessions","join-by-key"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"join_key\": \"ABCD-EFGH\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Submit Session Review",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/sessions/1/review", "host": ["{{base_url}}"], "path": ["student","sessions","1","review"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Excellent session! Very clear explanations.\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "description": "Only works on completed sessions. One review per booking."
               }
             },
             {
@@ -749,6 +811,22 @@
               }
             },
             {
+              "name": "Enroll in Course",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/courses/enroll", "host": ["{{base_url}}"], "path": ["student","courses","enroll"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": 1\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
               "name": "Get Course Progress",
               "request": {
                 "method": "GET",
@@ -757,6 +835,22 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/student/courses/1/progress", "host": ["{{base_url}}"], "path": ["student","courses","1","progress"] }
+              }
+            },
+            {
+              "name": "Update Video Progress",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/courses/1/lessons/1/video-progress", "host": ["{{base_url}}"], "path": ["student","courses","1","lessons","1","video-progress"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"watched_seconds\": 245,\n  \"duration_seconds\": 1800\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
               }
             },
             {
@@ -771,19 +865,25 @@
               }
             },
             {
-              "name": "Enroll in Course",
+              "name": "Get Certificate (info)",
               "request": {
-                "method": "POST",
+                "method": "GET",
                 "header": [
                   { "key": "Accept", "value": "application/json" },
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
-                "url": { "raw": "{{base_url}}/student/courses/enroll", "host": ["{{base_url}}"], "path": ["student","courses","enroll"] },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"course_id\": 1\n}",
-                  "options": { "raw": { "language": "json" } }
-                }
+                "url": { "raw": "{{base_url}}/student/courses/1/certificate", "host": ["{{base_url}}"], "path": ["student","courses","1","certificate"] }
+              }
+            },
+            {
+              "name": "Download Certificate (PDF)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/pdf" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/courses/1/certificate/download", "host": ["{{base_url}}"], "path": ["student","courses","1","certificate","download"] }
               }
             }
           ]
@@ -814,7 +914,7 @@
                 "url": { "raw": "{{base_url}}/student/profile", "host": ["{{base_url}}"], "path": ["student","profile"] },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"full_name\": \"Sara Al Student\",\n  \"phone\": \"+971509876543\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Dubai\",\n  \"bio\": \"Passionate about learning web development and AI.\",\n  \"education_level\": \"Bachelor of Computer Science\",\n  \"interests\": \"Web Development, AI, Mobile Apps\",\n  \"profile_language\": \"English\"\n}",
+                  "raw": "{\n  \"full_name\": \"Sara Al Student\",\n  \"phone\": \"+971509876543\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Dubai\",\n  \"bio\": \"Passionate about learning web development and AI.\",\n  \"education_level\": \"Bachelor of Computer Science\",\n  \"interests\": \"Web Development, AI, Mobile Apps\"\n}",
                   "options": { "raw": { "language": "json" } }
                 }
               }
@@ -828,10 +928,7 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/student/profile/photo", "host": ["{{base_url}}"], "path": ["student","profile","photo"] },
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "image", "type": "file", "src": "" }]
-                }
+                "body": { "mode": "formdata", "formdata": [{ "key": "photo", "type": "file", "src": "" }] }
               }
             },
             {
@@ -848,6 +945,17 @@
                   "raw": "{\n  \"current_password\": \"password\",\n  \"new_password\": \"newpassword123\",\n  \"new_password_confirmation\": \"newpassword123\"\n}",
                   "options": { "raw": { "language": "json" } }
                 }
+              }
+            },
+            {
+              "name": "My Certificates",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/student/profile/certificates", "host": ["{{base_url}}"], "path": ["student","profile","certificates"] }
               }
             }
           ]
@@ -871,6 +979,51 @@
         },
 
         {
+          "name": "Subscription",
+          "item": [
+            {
+              "name": "Get Subscription Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/subscription", "host": ["{{base_url}}"], "path": ["teacher","subscription"] }
+              }
+            },
+            {
+              "name": "Subscribe",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/subscription", "host": ["{{base_url}}"], "path": ["teacher","subscription"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"plan\": \"monthly\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "description": "Required to publish courses."
+              }
+            },
+            {
+              "name": "Cancel Subscription",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/subscription", "host": ["{{base_url}}"], "path": ["teacher","subscription"] }
+              }
+            }
+          ]
+        },
+
+        {
           "name": "Courses",
           "item": [
             {
@@ -885,7 +1038,7 @@
               }
             },
             {
-              "name": "Create Course",
+              "name": "Create Course (Draft)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -895,9 +1048,10 @@
                 "url": { "raw": "{{base_url}}/teacher/courses", "host": ["{{base_url}}"], "path": ["teacher","courses"] },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Advanced Physics\",\n  \"description\": \"Deep dive into mechanics and thermodynamics.\",\n  \"category\": \"Science\",\n  \"language\": \"English\",\n  \"price\": 79.99,\n  \"duration\": \"15 hours\"\n}",
+                  "raw": "{\n  \"title\": \"Advanced Physics\",\n  \"description\": \"Deep dive into mechanics and thermodynamics.\",\n  \"category_id\": 1,\n  \"level_id\": 2,\n  \"language\": \"English\",\n  \"price\": 79.99\n}",
                   "options": { "raw": { "language": "json" } }
-                }
+                },
+                "description": "Free — no subscription needed for drafts."
               }
             },
             {
@@ -935,7 +1089,8 @@
                   { "key": "Accept", "value": "application/json" },
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
-                "url": { "raw": "{{base_url}}/teacher/courses/1/publish", "host": ["{{base_url}}"], "path": ["teacher","courses","1","publish"] }
+                "url": { "raw": "{{base_url}}/teacher/courses/1/publish", "host": ["{{base_url}}"], "path": ["teacher","courses","1","publish"] },
+                "description": "Requires active subscription."
               }
             },
             {
@@ -947,14 +1102,11 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/teacher/courses/1/thumbnail", "host": ["{{base_url}}"], "path": ["teacher","courses","1","thumbnail"] },
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "thumbnail", "type": "file", "src": "" }]
-                }
+                "body": { "mode": "formdata", "formdata": [{ "key": "thumbnail", "type": "file", "src": "" }] }
               }
             },
             {
-              "name": "Archive Course",
+              "name": "Delete Course",
               "request": {
                 "method": "DELETE",
                 "header": [
@@ -981,7 +1133,7 @@
                 "url": { "raw": "{{base_url}}/teacher/courses/1/lessons", "host": ["{{base_url}}"], "path": ["teacher","courses","1","lessons"] },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Introduction to Forces\",\n  \"video_url\": \"https://example.com/videos/intro-forces\",\n  \"order\": 1,\n  \"description\": \"Learn about Newton's laws.\",\n  \"duration\": \"45 min\",\n  \"is_free\": true\n}",
+                  "raw": "{\n  \"title\": \"Introduction to Forces\",\n  \"description\": \"Learn about Newton's laws.\",\n  \"order\": 1,\n  \"is_free\": true\n}",
                   "options": { "raw": { "language": "json" } }
                 }
               }
@@ -1003,7 +1155,19 @@
               }
             },
             {
-              "name": "Upload Lesson Video",
+              "name": "Init Mux Video Upload (Preferred)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/lessons/1/mux-upload", "host": ["{{base_url}}"], "path": ["teacher","lessons","1","mux-upload"] },
+                "description": "Returns a Mux direct-upload URL. Client uploads video directly to Mux. Webhook updates lesson on completion."
+              }
+            },
+            {
+              "name": "Upload Lesson Video (Server fallback)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -1011,10 +1175,30 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/teacher/lessons/1/video", "host": ["{{base_url}}"], "path": ["teacher","lessons","1","video"] },
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "video", "type": "file", "src": "" }]
-                }
+                "body": { "mode": "formdata", "formdata": [{ "key": "video", "type": "file", "src": "" }] }
+              }
+            },
+            {
+              "name": "Add Lesson Attachment (PDF / PPT / image)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/lessons/1/attachments", "host": ["{{base_url}}"], "path": ["teacher","lessons","1","attachments"] },
+                "body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": "" }] }
+              }
+            },
+            {
+              "name": "Delete Lesson Attachment",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/teacher/lessons/1/attachments/1", "host": ["{{base_url}}"], "path": ["teacher","lessons","1","attachments","1"] }
               }
             },
             {
@@ -1089,7 +1273,7 @@
                 "url": { "raw": "{{base_url}}/teacher/profile", "host": ["{{base_url}}"], "path": ["teacher","profile"] },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"full_name\": \"Prof. Hassan\",\n  \"phone\": \"+92300123456\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Karachi\",\n  \"designation\": \"Associate Professor\",\n  \"subject\": \"Physics\",\n  \"subject_field\": \"Quantum Mechanics & Thermodynamics\",\n  \"short_bio\": \"10 years teaching Physics at university level. Passionate about making complex concepts simple.\",\n  \"degree\": \"PhD Physics — MIT\",\n  \"experience_years\": \"10\",\n  \"expertise_list\": [\"Quantum Physics\", \"Thermodynamics\", \"Mechanics\", \"Electromagnetism\"],\n  \"languages_list\": [\"English\", \"Urdu\"]\n}",
+                  "raw": "{\n  \"full_name\": \"Prof. Hassan\",\n  \"phone\": \"+92300123456\",\n  \"language\": \"en\",\n  \"timezone\": \"Asia/Karachi\",\n  \"designation\": \"Associate Professor\",\n  \"subject\": \"Physics\",\n  \"subject_field\": \"Quantum Mechanics & Thermodynamics\",\n  \"short_bio\": \"10 years teaching Physics at university level.\",\n  \"degree\": \"PhD Physics — MIT\",\n  \"experience_years\": \"10\",\n  \"expertise_list\": [\"Quantum Physics\", \"Thermodynamics\", \"Mechanics\"],\n  \"languages_list\": [\"English\", \"Urdu\"]\n}",
                   "options": { "raw": { "language": "json" } }
                 }
               }
@@ -1103,10 +1287,7 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/teacher/profile/photo", "host": ["{{base_url}}"], "path": ["teacher","profile","photo"] },
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "photo", "type": "file", "src": "" }]
-                }
+                "body": { "mode": "formdata", "formdata": [{ "key": "photo", "type": "file", "src": "" }] }
               }
             },
             {
@@ -1118,10 +1299,7 @@
                   { "key": "Authorization", "value": "Bearer {{token}}" }
                 ],
                 "url": { "raw": "{{base_url}}/teacher/profile/intro-video", "host": ["{{base_url}}"], "path": ["teacher","profile","intro-video"] },
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "video", "type": "file", "src": "" }]
-                }
+                "body": { "mode": "formdata", "formdata": [{ "key": "video", "type": "file", "src": "" }] }
               }
             },
             {
@@ -1146,6 +1324,160 @@
     },
 
     {
+      "name": "Chat (Reverb — Real-time)",
+      "description": "One-to-one chat between any two users (mentor ↔ student, teacher ↔ student, student ↔ student, mentor ↔ teacher).\n\nWebSocket: ws://127.0.0.1:8080/app/toriino_ws_key_2026\nSubscribe to private channel: private-conversation.{id}\nEvent to listen: message.sent",
+      "item": [
+        {
+          "name": "List My Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/chat/conversations", "host": ["{{base_url}}"], "path": ["chat","conversations"] },
+            "description": "Returns all conversations with last message preview and unread count. Sorted by last_message_at."
+          }
+        },
+        {
+          "name": "Start / Get Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/chat/conversations", "host": ["{{base_url}}"], "path": ["chat","conversations"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 5\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Opens an existing conversation or creates a new one. Returns conversation + channel name to subscribe to.\n\nUse this when the user taps the chat bubble on a session card — pass the mentor/student user_id."
+          }
+        },
+        {
+          "name": "Get Conversation Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/chat/conversations/1", "host": ["{{base_url}}"], "path": ["chat","conversations","1"] }
+          }
+        },
+        {
+          "name": "Get Messages (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chat/conversations/1/messages?page=1",
+              "host": ["{{base_url}}"], "path": ["chat","conversations","1","messages"],
+              "query": [{ "key": "page", "value": "1" }]
+            },
+            "description": "50 messages per page, newest first. Also auto-marks the other person's messages as read."
+          }
+        },
+        {
+          "name": "Send Message (text)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/chat/conversations/1/messages", "host": ["{{base_url}}"], "path": ["chat","conversations","1","messages"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hello! When does our session start?\",\n  \"type\": \"text\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Fires MessageSent event on private-conversation.{id} channel via Reverb. The other participant receives it in real-time."
+          }
+        },
+        {
+          "name": "Send Message (image / file URL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/chat/conversations/1/messages", "host": ["{{base_url}}"], "path": ["chat","conversations","1","messages"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Here is the assignment PDF\",\n  \"type\": \"file\",\n  \"attachment_url\": \"https://storage.turiino.com/attachments/assignment.pdf\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Mark All Messages Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/chat/conversations/1/read", "host": ["{{base_url}}"], "path": ["chat","conversations","1","read"] }
+          }
+        },
+        {
+          "name": "Delete Conversation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/chat/conversations/1", "host": ["{{base_url}}"], "path": ["chat","conversations","1"] }
+          }
+        },
+        {
+          "name": "Search Users to Chat",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chat/users/search?q=ahmed&role=mentor",
+              "host": ["{{base_url}}"], "path": ["chat","users","search"],
+              "query": [
+                { "key": "q", "value": "ahmed", "description": "Name / email search (min 1 char)" },
+                { "key": "role", "value": "mentor", "description": "mentor | teacher | student (optional filter)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Broadcasting Channel Auth (Reverb)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/broadcasting/auth", "host": ["{{base_url}}"], "path": ["broadcasting","auth"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"socket_id\": \"123456.789012\",\n  \"channel_name\": \"private-conversation.1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Called by the mobile SDK (Laravel Echo / Pusher-js) to authenticate a private channel subscription.\n\nReturns a signed auth string to pass to the Reverb WebSocket server."
+          }
+        }
+      ]
+    },
+
+    {
       "name": "Public",
       "item": [
         {
@@ -1154,11 +1486,12 @@
             "method": "GET",
             "header": [{ "key": "Accept", "value": "application/json" }],
             "url": {
-              "raw": "{{base_url}}/courses?search=math&category=Mathematics",
+              "raw": "{{base_url}}/courses?search=math",
               "host": ["{{base_url}}"], "path": ["courses"],
               "query": [
                 { "key": "search", "value": "math" },
-                { "key": "category", "value": "Mathematics" },
+                { "key": "category_id", "value": "1", "disabled": true },
+                { "key": "level_id", "value": "2", "disabled": true },
                 { "key": "language", "value": "English", "disabled": true }
               ]
             }
@@ -1178,11 +1511,11 @@
             "method": "GET",
             "header": [{ "key": "Accept", "value": "application/json" }],
             "url": {
-              "raw": "{{base_url}}/mentors?specialization=web&verified=1",
+              "raw": "{{base_url}}/mentors?specialization=web",
               "host": ["{{base_url}}"], "path": ["mentors"],
               "query": [
                 { "key": "specialization", "value": "web" },
-                { "key": "verified", "value": "1" }
+                { "key": "language", "value": "English", "disabled": true }
               ]
             }
           }
@@ -1212,6 +1545,14 @@
           }
         },
         {
+          "name": "Student Public Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/students/1", "host": ["{{base_url}}"], "path": ["students","1"] }
+          }
+        },
+        {
           "name": "Search (All Types)",
           "request": {
             "method": "GET",
@@ -1221,22 +1562,7 @@
               "host": ["{{base_url}}"], "path": ["search"],
               "query": [
                 { "key": "q", "value": "laravel" },
-                { "key": "type", "value": "all" }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Search Mentors Only",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Accept", "value": "application/json" }],
-            "url": {
-              "raw": "{{base_url}}/search?q=python&type=mentor",
-              "host": ["{{base_url}}"], "path": ["search"],
-              "query": [
-                { "key": "q", "value": "python" },
-                { "key": "type", "value": "mentor" }
+                { "key": "type", "value": "all", "description": "all | mentor | course" }
               ]
             }
           }
@@ -1269,6 +1595,53 @@
     },
 
     {
+      "name": "Dropdowns",
+      "description": "Reference data for form selectors — no auth required.",
+      "item": [
+        {
+          "name": "Course Categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/course-categories", "host": ["{{base_url}}"], "path": ["course-categories"] }
+          }
+        },
+        {
+          "name": "Course Levels",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/course-levels", "host": ["{{base_url}}"], "path": ["course-levels"] }
+          }
+        },
+        {
+          "name": "Industries (Mentor profile)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/industries", "host": ["{{base_url}}"], "path": ["industries"] }
+          }
+        },
+        {
+          "name": "Languages",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/languages", "host": ["{{base_url}}"], "path": ["languages"] }
+          }
+        },
+        {
+          "name": "Mentor Student Levels",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/mentor-student-levels", "host": ["{{base_url}}"], "path": ["mentor-student-levels"] }
+          }
+        }
+      ]
+    },
+
+    {
       "name": "Notifications",
       "item": [
         {
@@ -1283,7 +1656,7 @@
           }
         },
         {
-          "name": "Mark as Read",
+          "name": "Mark Notification as Read",
           "request": {
             "method": "POST",
             "header": [
@@ -1319,7 +1692,7 @@
     },
 
     {
-      "name": "🤖 AI Chat",
+      "name": "AI Chat",
       "item": [
         {
           "name": "Chat History",
@@ -1425,7 +1798,7 @@
             "url": { "raw": "{{base_url}}/support", "host": ["{{base_url}}"], "path": ["support"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"subject\": \"Payment not processed\",\n  \"message\": \"I enrolled in the Mathematics course but my payment did not go through even though my card was charged.\"\n}",
+              "raw": "{\n  \"subject\": \"Payment not processed\",\n  \"message\": \"I enrolled in the Mathematics course but my payment did not go through.\"\n}",
               "options": { "raw": { "language": "json" } }
             }
           }

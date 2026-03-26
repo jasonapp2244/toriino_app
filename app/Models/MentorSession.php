@@ -8,6 +8,9 @@ class MentorSession extends Model
 {
     protected $table = 'mentor_sessions';
 
+    // Max students allowed in a group session
+    public const GROUP_MAX_SEATS = 5;
+
     protected $fillable = [
         'mentor_id',
         'title',
@@ -16,10 +19,12 @@ class MentorSession extends Model
         'end_time',
         'duration_minutes',
         'max_seats',
+        'group_max_seats',
         'seats_booked',
         'language',
         'price',
         'status',
+        'join_key',
     ];
 
     protected $casts = [
@@ -28,6 +33,7 @@ class MentorSession extends Model
         'price'            => 'float',
         'duration_minutes' => 'integer',
         'max_seats'        => 'integer',
+        'group_max_seats'  => 'integer',
         'seats_booked'     => 'integer',
     ];
 

@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Mentor;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Availability;
+use App\Models\Industry;
+use App\Models\AppLanguage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class MentorProfileController extends Controller
 {
@@ -37,14 +41,14 @@ class MentorProfileController extends Controller
             'designation'            => 'sometimes|string|max:255',
             'short_bio'              => 'sometimes|string|max:1000',
             'specialization'         => 'sometimes|string|max:255',
-            'industry'               => 'sometimes|string|max:100',
+            'industry'               => 'sometimes|string|max:150',   // name string from industries table
             'expertise_list'         => 'sometimes|array',
             'expertise_list.*'       => 'string|max:100',
             'preferred_student_level'=> 'sometimes|in:beginner,intermediate,advanced,all',
             'languages_list'         => 'sometimes|array',
-            'languages_list.*'       => 'string|max:50',
+            'languages_list.*'       => 'string|max:100',             // name string from app_languages table
             'price_per_hour'         => 'sometimes|numeric|min:0',
-            'experience_years'       => 'sometimes|string|max:20',
+            'experience_years'       => 'sometimes|integer|min:0|max:60',
             // availability
             'availability'           => 'sometimes|array',
             'availability.*.day'     => 'required_with:availability|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
@@ -137,19 +141,27 @@ class MentorProfileController extends Controller
     public function uploadIntroVideo(Request $request): JsonResponse
     {
         $request->validate([
-            'video' => 'required|file|mimes:mp4,mov,avi|max:102400',
+            'video' => 'required|file|mimes:mp4,mov,mkv,avi,m4v|max:204800', // max 200 MB
         ]);
+
+        $user = $request->user();
+        $profile = $user->mentorProfile;
+
+        // Delete old intro video from storage if it exists locally
+        if ($profile?->intro_video && !\Illuminate\Support\Str::startsWith($profile->intro_video, 'http')) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($profile->intro_video);
+        }
 
         $path = $request->file('video')->store('mentor-intro-videos', 'public');
 
-        $request->user()->mentorProfile()->updateOrCreate(
-            ['user_id' => $request->user()->id],
+        $user->mentorProfile()->updateOrCreate(
+            ['user_id' => $user->id],
             ['intro_video' => $path]
         );
 
         return ApiResponse::success([
             'intro_video_url' => asset('storage/' . $path),
-        ], 'Intro video uploaded.');
+        ], 'Intro video uploaded successfully.');
     }
 
     public function publicProfile(int $id): JsonResponse
@@ -175,9 +187,14 @@ class MentorProfileController extends Controller
     {
         $mp = $user->mentorProfile;
         if (!$mp) {
-            return [];
+            return [
+                'profile_setup_complete' => false,
+                'missing_fields'         => \App\Models\MentorProfile::$requiredFields,
+            ];
         }
+
         return [
+            'photo_url'               => $user->photo_url,
             'designation'             => $mp->designation,
             'short_bio'               => $mp->short_bio ?? $mp->intro,
             'specialization'          => $mp->specialization,
@@ -192,6 +209,8 @@ class MentorProfileController extends Controller
             'total_reviews'           => $mp->total_reviews,
             'is_verified'             => $mp->is_verified,
             'is_featured'             => $mp->is_featured,
+            'profile_setup_complete'  => $mp->profile_setup_complete ?? false,
+            'missing_fields'          => $mp->missingFields(),
         ];
     }
 }

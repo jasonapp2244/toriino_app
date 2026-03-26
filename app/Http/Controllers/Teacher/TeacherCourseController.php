@@ -7,11 +7,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Teacher\StoreCourseRequest;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\LessonAttachment;
+use App\Services\MuxService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TeacherCourseController extends Controller
 {
+    private const MIN_LESSONS = 5;
+    private const MAX_LESSONS = 10;
+
     public function index(Request $request): JsonResponse
     {
         $courses = Course::where('teacher_id', $request->user()->id)
@@ -24,12 +29,12 @@ class TeacherCourseController extends Controller
 
     public function store(StoreCourseRequest $request): JsonResponse
     {
-
         $course = Course::create([
             'teacher_id'  => $request->user()->id,
             'title'       => $request->title,
             'description' => $request->description,
-            'category'    => $request->category,
+            'category_id' => $request->category_id,
+            'level_id'    => $request->level_id,
             'language'    => $request->language,
             'price'       => $request->price,
             'status'      => 'draft',
@@ -41,7 +46,7 @@ class TeacherCourseController extends Controller
     public function show(int $id, Request $request): JsonResponse
     {
         $course = Course::where('teacher_id', $request->user()->id)
-            ->with(['lessons', 'enrollments.student.profile', 'reviews.fromUser.profile'])
+            ->with(['category', 'level', 'lessons.attachments', 'enrollments.student.profile', 'reviews.fromUser.profile'])
             ->find($id);
 
         if (!$course) {
@@ -62,15 +67,16 @@ class TeacherCourseController extends Controller
         $request->validate([
             'title'        => 'sometimes|string|max:255',
             'description'  => 'sometimes|string',
-            'category'     => 'sometimes|string',
+            'category_id'  => 'sometimes|exists:course_categories,id',
+            'level_id'     => 'sometimes|exists:course_levels,id',
             'language'     => 'sometimes|string',
             'price'        => 'sometimes|numeric|min:0',
             'platform_fee' => 'sometimes|numeric|min:0',
         ]);
 
         $course->update($request->only([
-            'title', 'description', 'category', 'language',
-            'price', 'platform_fee', 'duration',
+            'title', 'description', 'category_id', 'level_id',
+            'language', 'price', 'platform_fee', 'duration',
         ]));
 
         return ApiResponse::success($course, 'Course updated');
@@ -78,7 +84,6 @@ class TeacherCourseController extends Controller
 
     public function publish(int $id, Request $request): JsonResponse
     {
-        // Teacher must have an active subscription to publish courses
         if (!$request->user()->hasActiveSubscription()) {
             return ApiResponse::error(
                 'You need an active subscription to publish courses. You can still create and edit drafts.',
@@ -93,8 +98,24 @@ class TeacherCourseController extends Controller
             return ApiResponse::notFound('Course not found');
         }
 
-        if ($course->lessons()->count() === 0) {
-            return ApiResponse::error('Add at least one lesson before publishing the course.');
+        $lessonCount = $course->lessons()->count();
+
+        if ($lessonCount < self::MIN_LESSONS) {
+            return ApiResponse::error(
+                "A course must have at least " . self::MIN_LESSONS . " lessons before publishing. Current: {$lessonCount}."
+            );
+        }
+
+        // Every lesson must have a video ready
+        $missingVideo = $course->lessons()
+            ->where(function ($q) {
+                $q->whereNull('mux_playback_id')
+                  ->whereNull('video_url');
+            })
+            ->count();
+
+        if ($missingVideo > 0) {
+            return ApiResponse::error("{$missingVideo} lesson(s) are missing a video. Every lesson must have a video.");
         }
 
         $course->update(['status' => 'published']);
@@ -115,7 +136,7 @@ class TeacherCourseController extends Controller
         return ApiResponse::success(null, 'Course archived');
     }
 
-    // ─── Lessons ─────────────────────────────────────────────────
+    // ─── Thumbnail ────────────────────────────────────────────────
 
     public function uploadThumbnail(int $id, Request $request): JsonResponse
     {
@@ -137,6 +158,8 @@ class TeacherCourseController extends Controller
         ], 'Thumbnail uploaded.');
     }
 
+    // ─── Lessons ──────────────────────────────────────────────────
+
     public function storeLesson(int $courseId, Request $request): JsonResponse
     {
         $course = Course::where('teacher_id', $request->user()->id)->find($courseId);
@@ -145,9 +168,15 @@ class TeacherCourseController extends Controller
             return ApiResponse::notFound('Course not found');
         }
 
+        $lessonCount = $course->lessons()->count();
+        if ($lessonCount >= self::MAX_LESSONS) {
+            return ApiResponse::error(
+                "A course cannot have more than " . self::MAX_LESSONS . " lessons. Current: {$lessonCount}."
+            );
+        }
+
         $request->validate([
             'title'       => 'required|string|max:255',
-            'video_url'   => 'sometimes|string',
             'order'       => 'required|integer|min:1',
             'description' => 'sometimes|string',
             'duration'    => 'sometimes|string',
@@ -157,16 +186,87 @@ class TeacherCourseController extends Controller
         $lesson = Lesson::create([
             'course_id'   => $course->id,
             'title'       => $request->title,
-            'video_url'   => $request->video_url,
             'order'       => $request->order,
             'description' => $request->description,
             'duration'    => $request->duration,
             'is_free'     => $request->is_free ?? false,
         ]);
 
-        return ApiResponse::created($lesson, 'Lesson added');
+        return ApiResponse::created($lesson, 'Lesson added. Upload a video using the Mux upload endpoint.');
     }
 
+    public function updateLesson(int $lessonId, Request $request): JsonResponse
+    {
+        $lesson = Lesson::whereHas('course', fn($q) => $q->where('teacher_id', $request->user()->id))->find($lessonId);
+
+        if (!$lesson) {
+            return ApiResponse::notFound('Lesson not found');
+        }
+
+        $lesson->update($request->only(['title', 'order', 'description', 'duration', 'is_free']));
+
+        return ApiResponse::success($lesson, 'Lesson updated');
+    }
+
+    public function deleteLesson(int $lessonId, Request $request): JsonResponse
+    {
+        $lesson = Lesson::whereHas('course', fn($q) => $q->where('teacher_id', $request->user()->id))->find($lessonId);
+
+        if (!$lesson) {
+            return ApiResponse::notFound('Lesson not found');
+        }
+
+        // Delete Mux asset if it exists
+        if ($lesson->mux_asset_id) {
+            try {
+                app(MuxService::class)->deleteAsset($lesson->mux_asset_id);
+            } catch (\Throwable) {
+                // Non-fatal — proceed with local deletion
+            }
+        }
+
+        $lesson->delete();
+
+        return ApiResponse::success(null, 'Lesson deleted');
+    }
+
+    // ─── Mux Video Upload ─────────────────────────────────────────
+
+    /**
+     * Step 1: Teacher requests a Mux direct upload URL.
+     * The client then uploads the video file directly to Mux (not through our server).
+     * Step 2: Mux processes the video and notifies via webhook.
+     */
+    public function initMuxUpload(int $lessonId, Request $request): JsonResponse
+    {
+        $lesson = Lesson::whereHas('course', fn($q) => $q->where('teacher_id', $request->user()->id))->find($lessonId);
+
+        if (!$lesson) {
+            return ApiResponse::notFound('Lesson not found');
+        }
+
+        try {
+            $result = app(MuxService::class)->createDirectUpload();
+
+            $lesson->update([
+                'mux_upload_id' => $result['upload_id'],
+                'video_status'  => 'pending',
+            ]);
+
+            return ApiResponse::success([
+                'upload_url'  => $result['upload_url'],
+                'upload_id'   => $result['upload_id'],
+                'lesson_id'   => $lesson->id,
+                'instructions'=> 'PUT the video file directly to upload_url. Mux will process it and notify via webhook.',
+            ], 'Mux upload URL generated.');
+        } catch (\Throwable $e) {
+            return ApiResponse::error('Failed to create Mux upload: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Fallback: Upload video directly to our server (for dev / non-Mux setups).
+     */
     public function uploadLessonVideo(int $lessonId, Request $request): JsonResponse
     {
         $lesson = Lesson::whereHas('course', fn($q) => $q->where('teacher_id', $request->user()->id))->find($lessonId);
@@ -180,14 +280,19 @@ class TeacherCourseController extends Controller
         ]);
 
         $path = $request->file('video')->store('lesson-videos', 'public');
-        $lesson->update(['video_url' => asset('storage/' . $path)]);
+        $lesson->update([
+            'video_url'    => asset('storage/' . $path),
+            'video_status' => 'ready',
+        ]);
 
         return ApiResponse::success([
             'video_url' => asset('storage/' . $path),
         ], 'Lesson video uploaded.');
     }
 
-    public function updateLesson(int $lessonId, Request $request): JsonResponse
+    // ─── Lesson Attachments ───────────────────────────────────────
+
+    public function addLessonAttachment(int $lessonId, Request $request): JsonResponse
     {
         $lesson = Lesson::whereHas('course', fn($q) => $q->where('teacher_id', $request->user()->id))->find($lessonId);
 
@@ -195,12 +300,26 @@ class TeacherCourseController extends Controller
             return ApiResponse::notFound('Lesson not found');
         }
 
-        $lesson->update($request->only(['title', 'video_url', 'order', 'description', 'duration', 'is_free']));
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,ppt,pptx,jpg,jpeg,png,webp|max:20480',
+            'type' => 'required|in:pdf,ppt,image',
+        ]);
 
-        return ApiResponse::success($lesson, 'Lesson updated');
+        $file = $request->file('file');
+        $path = $file->store('lesson-attachments', 'public');
+
+        $attachment = LessonAttachment::create([
+            'lesson_id'     => $lesson->id,
+            'type'          => $request->type,
+            'file_path'     => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'file_size_kb'  => (int) round($file->getSize() / 1024),
+        ]);
+
+        return ApiResponse::created($attachment, 'Attachment added to lesson.');
     }
 
-    public function deleteLesson(int $lessonId, Request $request): JsonResponse
+    public function deleteLessonAttachment(int $lessonId, int $attachmentId, Request $request): JsonResponse
     {
         $lesson = Lesson::whereHas('course', fn($q) => $q->where('teacher_id', $request->user()->id))->find($lessonId);
 
@@ -208,8 +327,15 @@ class TeacherCourseController extends Controller
             return ApiResponse::notFound('Lesson not found');
         }
 
-        $lesson->delete();
+        $attachment = LessonAttachment::where('lesson_id', $lessonId)->find($attachmentId);
 
-        return ApiResponse::success(null, 'Lesson deleted');
+        if (!$attachment) {
+            return ApiResponse::notFound('Attachment not found');
+        }
+
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
+        $attachment->delete();
+
+        return ApiResponse::success(null, 'Attachment deleted.');
     }
 }

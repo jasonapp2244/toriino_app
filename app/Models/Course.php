@@ -10,7 +10,8 @@ class Course extends Model
         'teacher_id',
         'title',
         'description',
-        'category',
+        'category_id',
+        'level_id',
         'language',
         'duration',
         'price',
@@ -28,6 +29,16 @@ class Course extends Model
         'rating'            => 'float',
         'total_enrollments' => 'integer',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(CourseCategory::class, 'category_id');
+    }
+
+    public function level()
+    {
+        return $this->belongsTo(CourseLevel::class, 'level_id');
+    }
 
     public function teacher()
     {

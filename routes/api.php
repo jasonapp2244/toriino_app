@@ -33,6 +33,9 @@ use App\Http\Controllers\Common\AiChatController;
 use App\Http\Controllers\Common\ReviewController;
 use App\Http\Controllers\Common\SupportTicketController;
 use App\Http\Controllers\Common\SearchController;
+use App\Http\Controllers\Common\CourseDropdownController;
+use App\Http\Controllers\Common\MuxWebhookController;
+use App\Http\Controllers\Common\ChatController;
 
 Route::prefix('v1')->group(function () {
 
@@ -75,6 +78,18 @@ Route::prefix('v1')->group(function () {
     Route::get('teachers/{id}',             [TeacherProfileController::class,     'publicProfile']);
     Route::get('students/{id}',             [StudentProfileController::class,     'publicProfile']);
 
+    // Course Dropdowns
+    Route::get('course-categories',   [CourseDropdownController::class, 'categories']);
+    Route::get('course-levels',       [CourseDropdownController::class, 'levels']);
+
+    // Mentor Profile Dropdowns
+    Route::get('industries',          [CourseDropdownController::class, 'industries']);
+    Route::get('languages',           [CourseDropdownController::class, 'languages']);
+    Route::get('mentor-student-levels',[CourseDropdownController::class, 'mentorStudentLevels']);
+
+    // Mux webhook (called by Mux servers, not by app clients)
+    Route::post('webhooks/mux', [MuxWebhookController::class, 'handle']);
+
     // Public Courses & Reviews
     Route::get('courses',             [StudentCourseController::class, 'index']);
     Route::get('courses/{id}',        [StudentCourseController::class, 'show']);
@@ -112,14 +127,19 @@ Route::prefix('v1')->group(function () {
             Route::post('subscription',   [MentorSubscriptionController::class, 'subscribe']);
             Route::delete('subscription', [MentorSubscriptionController::class, 'cancel']);
 
-            // Sessions — requires active subscription (checked inside controller)
-            Route::get('sessions',                [MentorSessionController::class, 'index']);
-            Route::post('sessions',               [MentorSessionController::class, 'store']);          // ← subscription gate
-            Route::get('sessions/{id}',           [MentorSessionController::class, 'show']);
-            Route::put('sessions/{id}',           [MentorSessionController::class, 'update']);         // NEW
-            Route::post('sessions/{id}/start',    [MentorSessionController::class, 'startSession']);
-            Route::post('sessions/{id}/complete', [MentorSessionController::class, 'completeSession']);
-            Route::delete('sessions/{id}',        [MentorSessionController::class, 'destroy']);
+            // Sessions — requires active subscription (?period=weekly|monthly|yearly|all)
+            // Chat bubble on session card → POST /chat/conversations with that student's ID
+            Route::get('sessions',                       [MentorSessionController::class, 'index']);
+            Route::get('sessions/calendar',              [MentorSessionController::class, 'calendarSessions']);
+            Route::post('sessions',                      [MentorSessionController::class, 'store']);
+            Route::get('sessions/{id}',                  [MentorSessionController::class, 'show']);
+            Route::put('sessions/{id}',                  [MentorSessionController::class, 'update']);
+            Route::post('sessions/{id}/start',           [MentorSessionController::class, 'startSession']);
+            Route::post('sessions/{id}/complete',        [MentorSessionController::class, 'completeSession']);
+            Route::delete('sessions/{id}',               [MentorSessionController::class, 'destroy']);
+            // Group session join key
+            Route::get('sessions/{id}/join-key',         [MentorSessionController::class, 'getJoinKey']);
+            Route::post('sessions/{id}/regenerate-key',  [MentorSessionController::class, 'regenerateJoinKey']);
 
             // Availability
             Route::get('availability',         [MentorAvailabilityController::class, 'index']);
@@ -146,23 +166,33 @@ Route::prefix('v1')->group(function () {
 
             Route::get('dashboard', [StudentHomeController::class, 'dashboard']);
 
-            // Session bookings
-            Route::get('sessions',         [StudentSessionController::class, 'index']);
-            Route::post('sessions/book',   [StudentSessionController::class, 'book']);
-            Route::delete('sessions/{id}', [StudentSessionController::class, 'cancel']);
+            // Session bookings  (?status=upcoming|completed|cancelled|all  &period=weekly|monthly|yearly)
+            // Chat bubble on session card → POST /chat/conversations with the other user's ID
+            Route::get('sessions',                       [StudentSessionController::class, 'index']);
+            Route::post('sessions/book',                 [StudentSessionController::class, 'book']);
+            Route::post('sessions/join-by-key',          [StudentSessionController::class, 'joinByKey']);
+            Route::get('sessions/{id}',                  [StudentSessionController::class, 'show']);
+            Route::post('sessions/{id}/review',          [StudentSessionController::class, 'submitReview']);
+            Route::delete('sessions/{id}',               [StudentSessionController::class, 'cancel']);
 
             // Course enrollment & progress
-            Route::post('courses/enroll',                                  [StudentCourseController::class, 'enroll']);
-            Route::get('courses/my',                                       [StudentCourseController::class, 'myCourses']);
-            Route::get('courses/completed',                                [StudentCourseController::class, 'completedCourses']);
-            Route::get('courses/{courseId}/progress',                      [StudentCourseController::class, 'courseProgress']);          // NEW
-            Route::post('courses/{courseId}/lessons/{lessonId}/complete',  [StudentCourseController::class, 'completeLesson']);           // NEW
+            Route::post('courses/enroll',                                         [StudentCourseController::class, 'enroll']);
+            Route::get('courses/my',                                              [StudentCourseController::class, 'myCourses']);
+            Route::get('courses/completed',                                       [StudentCourseController::class, 'completedCourses']);
+            Route::get('courses/{courseId}/progress',                             [StudentCourseController::class, 'courseProgress']);
+            Route::post('courses/{courseId}/lessons/{lessonId}/video-progress',   [StudentCourseController::class, 'updateVideoProgress']);
+            Route::post('courses/{courseId}/lessons/{lessonId}/complete',         [StudentCourseController::class, 'completeLesson']);
+
+            // Certificate
+            Route::get('courses/{courseId}/certificate',          [StudentCourseController::class, 'getCertificate']);
+            Route::get('courses/{courseId}/certificate/download', [StudentCourseController::class, 'downloadCertificate']);
 
             // Profile
             Route::get('profile',                  [StudentProfileController::class, 'show']);
             Route::put('profile',                  [StudentProfileController::class, 'update']);
             Route::post('profile/photo',           [StudentProfileController::class, 'uploadPhoto']);
             Route::post('profile/change-password', [StudentProfileController::class, 'changePassword']);
+            Route::get('profile/certificates',     [StudentProfileController::class, 'myCertificates']);
         });
 
         // ───────────────────────────────────────────────────────
@@ -189,10 +219,17 @@ Route::prefix('v1')->group(function () {
             Route::delete('courses/{id}',           [TeacherCourseController::class, 'destroy']);
 
             // Lessons
-            Route::post('courses/{courseId}/lessons',  [TeacherCourseController::class, 'storeLesson']);   // fixed typo
-            Route::post('lessons/{lessonId}/video',    [TeacherCourseController::class, 'uploadLessonVideo']); // NEW
-            Route::put('lessons/{lessonId}',           [TeacherCourseController::class, 'updateLesson']);
-            Route::delete('lessons/{lessonId}',        [TeacherCourseController::class, 'deleteLesson']);
+            Route::post('courses/{courseId}/lessons',                        [TeacherCourseController::class, 'storeLesson']);
+            Route::put('lessons/{lessonId}',                                 [TeacherCourseController::class, 'updateLesson']);
+            Route::delete('lessons/{lessonId}',                              [TeacherCourseController::class, 'deleteLesson']);
+
+            // Lesson Video — Mux direct upload (preferred) or server upload (fallback)
+            Route::post('lessons/{lessonId}/mux-upload',                     [TeacherCourseController::class, 'initMuxUpload']);
+            Route::post('lessons/{lessonId}/video',                          [TeacherCourseController::class, 'uploadLessonVideo']);
+
+            // Lesson Attachments (PDF / PPT / image)
+            Route::post('lessons/{lessonId}/attachments',                    [TeacherCourseController::class, 'addLessonAttachment']);
+            Route::delete('lessons/{lessonId}/attachments/{attachmentId}',   [TeacherCourseController::class, 'deleteLessonAttachment']);
 
             // Earnings & Withdrawals
             Route::get('earnings',           [TeacherEarningController::class, 'index']);
@@ -228,6 +265,31 @@ Route::prefix('v1')->group(function () {
         Route::get('support',             [SupportTicketController::class, 'index']);
         Route::post('support',            [SupportTicketController::class, 'store']);
         Route::get('support/{id}',        [SupportTicketController::class, 'show']);
-        Route::post('support/{id}/close', [SupportTicketController::class, 'close']);  // NEW
+        Route::post('support/{id}/close', [SupportTicketController::class, 'close']);
+
+        // ───────────────────────────────────────────────────────
+        // ONE-TO-ONE CHAT  (all roles: mentor ↔ student, teacher ↔ student,
+        //                   student ↔ student, mentor ↔ teacher, etc.)
+        // Real-time: Reverb WebSocket  →  private-conversation.{id}
+        // ───────────────────────────────────────────────────────
+        Route::prefix('chat')->group(function () {
+            // Conversations
+            Route::get('conversations',              [ChatController::class, 'index']);   // list my conversations
+            Route::post('conversations',             [ChatController::class, 'start']);   // open or get conversation
+            Route::get('conversations/{id}',         [ChatController::class, 'show']);    // conversation detail
+            Route::delete('conversations/{id}',      [ChatController::class, 'destroy']); // delete conversation
+
+            // Messages
+            Route::get('conversations/{id}/messages',  [ChatController::class, 'messages']);  // paginated history
+            Route::post('conversations/{id}/messages', [ChatController::class, 'send']);      // send message
+            Route::post('conversations/{id}/read',     [ChatController::class, 'markRead']);  // mark read
+
+            // User search (to start a new chat)
+            Route::get('users/search', [ChatController::class, 'searchUsers']); // ?q=name&role=mentor
+        });
+
+        // Reverb / Laravel Echo — WebSocket channel authentication
+        // Mobile client POSTs here with Bearer token + socket_id to get a signed channel token
+        Route::post('broadcasting/auth', \App\Http\Controllers\Common\BroadcastAuthController::class);
     });
 });

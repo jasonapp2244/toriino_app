@@ -39,4 +39,10 @@ return [
         'key' => env('OPENAI_API_KEY'),
     ],
 
+    'mux' => [
+        'token_id'     => env('MUX_TOKEN_ID'),
+        'token_secret' => env('MUX_TOKEN_SECRET'),
+        'webhook_secret' => env('MUX_WEBHOOK_SECRET'),
+    ],
+
 ];
