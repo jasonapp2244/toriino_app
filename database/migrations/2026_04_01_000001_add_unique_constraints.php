@@ -12,13 +12,8 @@ return new class extends Migration
             $table->unique(['session_id', 'student_id'], 'session_bookings_unique');
         });
 
-        Schema::table('lesson_video_progress', function (Blueprint $table) {
-            $table->unique(['lesson_id', 'student_id'], 'lesson_video_progress_unique');
-        });
-
-        Schema::table('course_favorites', function (Blueprint $table) {
-            $table->unique(['course_id', 'student_id'], 'course_favorites_unique');
-        });
+        // lesson_video_progress already has unique(['enrollment_id', 'lesson_id']) from creation migration
+        // course_favorites already has unique(['student_id', 'course_id']) from creation migration
 
         // Index for faster earning lookups
         Schema::table('earnings', function (Blueprint $table) {
@@ -30,14 +25,6 @@ return new class extends Migration
     {
         Schema::table('session_bookings', function (Blueprint $table) {
             $table->dropUnique('session_bookings_unique');
-        });
-
-        Schema::table('lesson_video_progress', function (Blueprint $table) {
-            $table->dropUnique('lesson_video_progress_unique');
-        });
-
-        Schema::table('course_favorites', function (Blueprint $table) {
-            $table->dropUnique('course_favorites_unique');
         });
 
         Schema::table('earnings', function (Blueprint $table) {
