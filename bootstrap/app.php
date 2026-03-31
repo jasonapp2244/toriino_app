@@ -11,7 +11,6 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -20,8 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription' => SubscriptionRequired::class,
         ]);
 
-        // statefulApi() removed — app uses Bearer token auth, not SPA cookie auth
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+ 

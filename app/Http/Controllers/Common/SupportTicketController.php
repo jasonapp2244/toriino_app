@@ -14,7 +14,7 @@ class SupportTicketController extends Controller
     {
         $tickets = SupportTicket::where('user_id', $request->user()->id)
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate(15);
 
         return ApiResponse::success($tickets);
     }

@@ -50,26 +50,29 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    //cache clear
-    Route::get('cache-clear', function () {
+    //cache clear — admin only
+    Route::middleware('auth:sanctum')->get('cache-clear', function () {
         Artisan::call('cache:clear');
         return response()->json([
             'message' => 'Cache cleared',
         ]);
     });
 
-    // Auth
-    Route::post('register',        [AuthController::class, 'register']);
-    Route::post('otp-verify',      [AuthController::class, 'otpVerify']);
-    Route::post('resend-otp',      [AuthController::class, 'resendOtp']);
-    Route::post('login',           [AuthController::class, 'login']);
-    Route::post('social-login',    [AuthController::class, 'socialLogin']);
-    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('reset-password',  [AuthController::class, 'resetPassword']);
+    // Auth (rate-limited to prevent brute force)
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('register',        [AuthController::class, 'register']);
+        Route::post('otp-verify',      [AuthController::class, 'otpVerify']);
+        Route::post('resend-otp',      [AuthController::class, 'resendOtp']);
+        Route::post('login',           [AuthController::class, 'login']);
+        Route::post('social-login',    [AuthController::class, 'socialLogin']);
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('reset-password',  [AuthController::class, 'resetPassword']);
+    });
 
     // Discovery & Search
     Route::get('search',           [SearchController::class, 'search']);
     Route::get('mentors',          [SearchController::class, 'mentors']);
+    Route::get('teachers',         [SearchController::class, 'teachers']);
     Route::get('privacy-policy',   [SearchController::class, 'privacyPolicy']);
 
     // Public Profiles
@@ -89,6 +92,9 @@ Route::prefix('v1')->group(function () {
 
     // Mux webhook (called by Mux servers, not by app clients)
     Route::post('webhooks/mux', [MuxWebhookController::class, 'handle']);
+
+    // Stripe webhook (called by Stripe, no auth required)
+    Route::post('webhooks/stripe', [\App\Http\Controllers\Common\PaymentController::class, 'handleWebhook']);
 
     // Public Courses & Reviews
     Route::get('courses',             [StudentCourseController::class, 'index']);
@@ -140,6 +146,10 @@ Route::prefix('v1')->group(function () {
             // Group session join key
             Route::get('sessions/{id}/join-key',         [MentorSessionController::class, 'getJoinKey']);
             Route::post('sessions/{id}/regenerate-key',  [MentorSessionController::class, 'regenerateJoinKey']);
+            // Video call meeting info (Jitsi)
+            Route::get('sessions/{id}/meeting-info',     [MentorSessionController::class, 'getMeetingInfo']);
+            // Heartbeat: mentor app pings every 30s while in call
+            Route::post('sessions/{id}/heartbeat',       [MentorSessionController::class, 'heartbeat']);
 
             // Availability
             Route::get('availability',         [MentorAvailabilityController::class, 'index']);
@@ -166,20 +176,37 @@ Route::prefix('v1')->group(function () {
 
             Route::get('dashboard', [StudentHomeController::class, 'dashboard']);
 
-            // Session bookings  (?status=upcoming|completed|cancelled|all  &period=weekly|monthly|yearly)
+            // Session bookings  (?status=booked|completed|cancelled|all  &period=weekly|monthly|yearly)
             // Chat bubble on session card → POST /chat/conversations with the other user's ID
-            Route::get('sessions',                       [StudentSessionController::class, 'index']);
-            Route::post('sessions/book',                 [StudentSessionController::class, 'book']);
-            Route::post('sessions/join-by-key',          [StudentSessionController::class, 'joinByKey']);
-            Route::get('sessions/{id}',                  [StudentSessionController::class, 'show']);
-            Route::post('sessions/{id}/review',          [StudentSessionController::class, 'submitReview']);
-            Route::delete('sessions/{id}',               [StudentSessionController::class, 'cancel']);
+            Route::get('sessions',                         [StudentSessionController::class, 'index']);
+            Route::post('sessions/book',                   [StudentSessionController::class, 'book']);
+            Route::post('sessions/join-by-key',            [StudentSessionController::class, 'joinByKey']);
+            Route::get('sessions/available/{mentorId}',    [StudentSessionController::class, 'availableByMentor']);
+            Route::get('sessions/{id}',                    [StudentSessionController::class, 'show']);
+            Route::post('sessions/{id}/review',            [StudentSessionController::class, 'submitReview']);
+            Route::post('sessions/{id}/reschedule',        [StudentSessionController::class, 'reschedule']);
+            Route::delete('sessions/{id}',                 [StudentSessionController::class, 'cancel']);
+            // Video call meeting info (Jitsi) — id is booking_id
+            Route::get('sessions/{id}/meeting-info',       [StudentSessionController::class, 'getMeetingInfo']);
+            // Poll session status (for reconnect check) — id is booking_id
+            Route::get('sessions/{id}/status',             [StudentSessionController::class, 'sessionStatus']);
 
             // Course enrollment & progress
             Route::post('courses/enroll',                                         [StudentCourseController::class, 'enroll']);
             Route::get('courses/my',                                              [StudentCourseController::class, 'myCourses']);
             Route::get('courses/completed',                                       [StudentCourseController::class, 'completedCourses']);
+
+            // In-Progress Courses screen (Ongoing / Completed / Favorites tabs)
+            // GET /api/v1/student/courses/in-progress?tab=ongoing|completed|favorites
+            Route::get('courses/in-progress',                                     [StudentCourseController::class, 'inProgressCourses']);
+
+            // Favorites — dedicated flat list
+            // GET /api/v1/student/courses/favorites
+            Route::get('courses/favorites',                                       [StudentCourseController::class, 'listFavorites']);
+            Route::post('courses/{courseId}/favorite',                            [StudentCourseController::class, 'toggleFavorite']);
+
             Route::get('courses/{courseId}/progress',                             [StudentCourseController::class, 'courseProgress']);
+            Route::get('courses/{courseId}/lessons/{lessonId}',                   [StudentCourseController::class, 'lessonDetail']);
             Route::post('courses/{courseId}/lessons/{lessonId}/video-progress',   [StudentCourseController::class, 'updateVideoProgress']);
             Route::post('courses/{courseId}/lessons/{lessonId}/complete',         [StudentCourseController::class, 'completeLesson']);
 
@@ -255,7 +282,7 @@ Route::prefix('v1')->group(function () {
 
         // AI Tutor Chat
         Route::get('ai-chat',    [AiChatController::class, 'history']);
-        Route::post('ai-chat',   [AiChatController::class, 'ask']);
+        Route::post('ai-chat',   [AiChatController::class, 'ask'])->middleware('throttle:30,1');
         Route::delete('ai-chat', [AiChatController::class, 'clearHistory']);
 
         // Reviews
@@ -281,11 +308,32 @@ Route::prefix('v1')->group(function () {
 
             // Messages
             Route::get('conversations/{id}/messages',  [ChatController::class, 'messages']);  // paginated history
-            Route::post('conversations/{id}/messages', [ChatController::class, 'send']);      // send message
+            Route::post('conversations/{id}/messages', [ChatController::class, 'send'])->middleware('throttle:100,1'); // send message (rate-limited)
             Route::post('conversations/{id}/read',     [ChatController::class, 'markRead']);  // mark read
 
             // User search (to start a new chat)
             Route::get('users/search', [ChatController::class, 'searchUsers']); // ?q=name&role=mentor
+        });
+
+        // ───────────────────────────────────────────────────────
+        // PAYMENTS (Stripe)
+        // ───────────────────────────────────────────────────────
+        Route::prefix('payments')->group(function () {
+            // Course purchase
+            Route::post('course/intent',  [\App\Http\Controllers\Common\PaymentController::class, 'createCoursePaymentIntent']);
+            Route::post('course/confirm', [\App\Http\Controllers\Common\PaymentController::class, 'confirmCoursePayment']);
+
+            // Session booking
+            Route::post('session/intent',  [\App\Http\Controllers\Common\PaymentController::class, 'createSessionPaymentIntent']);
+            Route::post('session/confirm', [\App\Http\Controllers\Common\PaymentController::class, 'confirmSessionPayment']);
+
+            // Subscription
+            Route::post('subscription/intent',  [\App\Http\Controllers\Common\PaymentController::class, 'createSubscriptionPaymentIntent']);
+            Route::post('subscription/confirm', [\App\Http\Controllers\Common\PaymentController::class, 'confirmSubscriptionPayment']);
+
+            // Payment history
+            Route::get('/',    [\App\Http\Controllers\Common\PaymentController::class, 'index']);
+            Route::get('{id}', [\App\Http\Controllers\Common\PaymentController::class, 'show']);
         });
 
         // Reverb / Laravel Echo — WebSocket channel authentication

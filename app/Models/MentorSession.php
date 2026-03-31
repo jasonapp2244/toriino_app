@@ -25,11 +25,16 @@ class MentorSession extends Model
         'price',
         'status',
         'join_key',
+        'meeting_room_id',
+        'mentor_last_ping_at',
+        'reminder_sent_at',
     ];
 
     protected $casts = [
-        'start_time'       => 'datetime',
-        'end_time'         => 'datetime',
+        'start_time'           => 'datetime',
+        'end_time'             => 'datetime',
+        'mentor_last_ping_at'  => 'datetime',
+        'reminder_sent_at'     => 'datetime',
         'price'            => 'float',
         'duration_minutes' => 'integer',
         'max_seats'        => 'integer',

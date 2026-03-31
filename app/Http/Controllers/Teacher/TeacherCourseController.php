@@ -27,14 +27,35 @@ class TeacherCourseController extends Controller
         return ApiResponse::success($courses);
     }
 
-    public function store(StoreCourseRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
+        $request->validate([
+            'title'       => 'required|string|max:255',
+            'description' => 'required|string',
+            'language'    => 'required|string|max:50',
+            'price'       => 'required|numeric|min:0',
+        ]);
+
+        // Resolve category_id from name if not provided as ID
+        $categoryId = $request->category_id;
+        if (!$categoryId && $request->category) {
+            $cat = \App\Models\CourseCategory::where('name', $request->category)->first();
+            $categoryId = $cat?->id;
+        }
+
+        // Resolve level_id from name if not provided as ID
+        $levelId = $request->level_id;
+        if (!$levelId && $request->level) {
+            $lvl = \App\Models\CourseLevel::where('name', $request->level)->first();
+            $levelId = $lvl?->id;
+        }
+
         $course = Course::create([
             'teacher_id'  => $request->user()->id,
             'title'       => $request->title,
             'description' => $request->description,
-            'category_id' => $request->category_id,
-            'level_id'    => $request->level_id,
+            'category_id' => $categoryId,
+            'level_id'    => $levelId,
             'language'    => $request->language,
             'price'       => $request->price,
             'status'      => 'draft',

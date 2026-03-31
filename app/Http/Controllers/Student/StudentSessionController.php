@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\BookSessionRequest;
+use App\Models\AppNotification;
 use App\Models\MentorSession;
 use App\Models\Review;
 use App\Models\SessionBooking;
@@ -137,6 +138,14 @@ class StudentSessionController extends Controller
 
         $session->increment('seats_booked');
 
+        // Notify mentor about the new booking
+        AppNotification::create([
+            'user_id' => $session->mentor_id,
+            'title'   => 'New Session Booking',
+            'body'    => $request->user()->name . ' booked your session "' . $session->title . '".',
+            'type'    => 'session_booked',
+        ]);
+
         return ApiResponse::created($booking->load('session'), 'Session booked successfully');
     }
 
@@ -183,12 +192,83 @@ class StudentSessionController extends Controller
         return ApiResponse::created($review, 'Review submitted successfully.');
     }
 
+    /**
+     * GET /student/sessions/{id}/status
+     * Student polls this to check if session is still ongoing (e.g. after reconnect).
+     * id = booking_id
+     */
+    public function sessionStatus(int $id, Request $request): JsonResponse
+    {
+        $booking = SessionBooking::where('student_id', $request->user()->id)->find($id);
+
+        if (!$booking) {
+            return ApiResponse::notFound('Booking not found.');
+        }
+
+        $session = $booking->session;
+
+        return ApiResponse::success([
+            'booking_status' => $booking->status,
+            'session_status' => $session->status,
+            'session_id'     => $session->id,
+            'can_join'       => $session->status === 'ongoing' && $booking->status === 'confirmed',
+            'meeting_room_id'=> $session->status === 'ongoing' ? $session->meeting_room_id : null,
+        ]);
+    }
+
+    /**
+     * GET /student/sessions/{id}/meeting-info
+     * Returns Jitsi meeting info for a booked session.
+     * The session must be 'ongoing' and the student must have a confirmed booking.
+     */
+    public function getMeetingInfo(int $id, Request $request): JsonResponse
+    {
+        $booking = SessionBooking::where('student_id', $request->user()->id)
+            ->where('status', 'confirmed')
+            ->find($id);
+
+        if (!$booking) {
+            return ApiResponse::notFound('Booking not found or not confirmed.');
+        }
+
+        $session = $booking->session;
+
+        if (!$session) {
+            return ApiResponse::notFound('Session not found.');
+        }
+
+        if ($session->status !== 'ongoing') {
+            return ApiResponse::error(
+                'Session has not started yet. Please wait for the mentor to start the session.',
+                422,
+                ['session_status' => $session->status]
+            );
+        }
+
+        return ApiResponse::success([
+            'booking_id'      => $booking->id,
+            'session_id'      => $session->id,
+            'title'           => $session->title,
+            'type'            => $session->type,
+            'status'          => $session->status,
+            'meeting_room_id' => $session->meeting_room_id,
+            'jitsi_room'      => $session->meeting_room_id,
+            'join_key'        => $session->type === 'group' ? $session->join_key : null,
+            'start_time'      => $session->start_time,
+            'end_time'        => $session->end_time,
+        ]);
+    }
+
     public function cancel(int $id, Request $request): JsonResponse
     {
         $booking = SessionBooking::where('student_id', $request->user()->id)->find($id);
 
         if (!$booking) {
             return ApiResponse::notFound('Booking not found');
+        }
+
+        if (!in_array($booking->status, ['confirmed', 'pending'])) {
+            return ApiResponse::error('This booking cannot be cancelled.', 422);
         }
 
         $booking->update(['status' => 'cancelled']);
@@ -258,5 +338,121 @@ class StudentSessionController extends Controller
                 'max_seats'    => $session->max_seats,
             ],
         ], 'Successfully joined the group session! Payment will be processed at session time.');
+    }
+
+    /**
+     * POST /student/sessions/{id}/reschedule
+     * Cancel the current booking and book a different available session with the same mentor.
+     * Body: { "new_session_id": 123 }
+     */
+    public function reschedule(int $id, Request $request): JsonResponse
+    {
+        $request->validate([
+            'new_session_id' => 'required|integer|exists:mentor_sessions,id',
+        ]);
+
+        $booking = SessionBooking::where('student_id', $request->user()->id)
+            ->whereIn('status', ['confirmed', 'pending'])
+            ->find($id);
+
+        if (!$booking) {
+            return ApiResponse::notFound('Active booking not found.');
+        }
+
+        $oldSession = $booking->session;
+
+        if ($oldSession->status !== 'upcoming') {
+            return ApiResponse::error('Only upcoming sessions can be rescheduled.', 422);
+        }
+
+        if ($request->new_session_id == $oldSession->id) {
+            return ApiResponse::error('New session must be different from the current session.', 422);
+        }
+
+        $newSession = MentorSession::find($request->new_session_id);
+
+        if ($newSession->mentor_id !== $oldSession->mentor_id) {
+            return ApiResponse::error('You can only reschedule to a session by the same mentor.', 422);
+        }
+
+        if ($newSession->status !== 'upcoming') {
+            return ApiResponse::error('The selected session is not available for booking.', 422);
+        }
+
+        if ($newSession->seatsAvailable() <= 0) {
+            return ApiResponse::error('No seats available in the selected session.', 422);
+        }
+
+        $alreadyBooked = SessionBooking::where('session_id', $newSession->id)
+            ->where('student_id', $request->user()->id)
+            ->exists();
+
+        if ($alreadyBooked) {
+            return ApiResponse::error('You have already booked the selected session.', 422);
+        }
+
+        // Cancel old booking
+        $booking->update(['status' => 'cancelled']);
+        $oldSession->decrement('seats_booked');
+
+        // Book new session
+        $newBooking = SessionBooking::create([
+            'session_id' => $newSession->id,
+            'student_id' => $request->user()->id,
+            'status'     => 'confirmed',
+        ]);
+        $newSession->increment('seats_booked');
+
+        return ApiResponse::success([
+            'old_booking_id' => $booking->id,
+            'new_booking'    => $newBooking->load('session.mentor.profile'),
+            'new_session' => [
+                'id'               => $newSession->id,
+                'title'            => $newSession->title,
+                'type'             => $newSession->type,
+                'start_time'       => $newSession->start_time,
+                'end_time'         => $newSession->end_time,
+                'duration_minutes' => $newSession->duration_minutes,
+                'language'         => $newSession->language,
+                'price'            => $newSession->price,
+                'seats_left'       => $newSession->seatsAvailable() - 1,
+            ],
+        ], 'Session rescheduled successfully.');
+    }
+
+    /**
+     * GET /student/sessions/available/{mentorId}
+     * List upcoming available sessions by a specific mentor (used when selecting a new session to reschedule to).
+     */
+    public function availableByMentor(int $mentorId, Request $request): JsonResponse
+    {
+        $sessions = MentorSession::with(['mentor.profile', 'mentor.mentorProfile'])
+            ->where('mentor_id', $mentorId)
+            ->where('status', 'upcoming')
+            ->where('start_time', '>', now())
+            ->orderBy('start_time')
+            ->get()
+            ->map(fn($s) => [
+                'id'               => $s->id,
+                'title'            => $s->title,
+                'type'             => $s->type,
+                'start_time'       => $s->start_time,
+                'end_time'         => $s->end_time,
+                'duration_minutes' => $s->duration_minutes,
+                'language'         => $s->language,
+                'price'            => $s->price,
+                'seats_left'       => $s->seatsAvailable(),
+                'max_seats'        => $s->max_seats,
+                'join_key'         => $s->type === 'group' ? $s->join_key : null,
+                'mentor' => $s->mentor ? [
+                    'id'          => $s->mentor->id,
+                    'name'        => $s->mentor->name,
+                    'photo_url'   => $s->mentor->photo_url,
+                    'designation' => $s->mentor->mentorProfile?->designation,
+                    'rating'      => $s->mentor->mentorProfile?->rating,
+                ] : null,
+            ]);
+
+        return ApiResponse::success($sessions);
     }
 }

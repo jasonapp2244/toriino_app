@@ -32,7 +32,7 @@ class CourseDropdownController extends Controller
         return ApiResponse::success($levels);
     }
 
-    // ─── Mentor profile dropdowns ─────────────────────────────────
+    // ─── Mentor profile dropdowns ───────────────────────────
 
     /**
      * Industry list for mentor profile setup.

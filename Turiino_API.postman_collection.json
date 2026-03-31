@@ -1826,6 +1826,286 @@
           }
         }
       ]
+    },
+
+    {
+      "name": "Payments (Stripe)",
+      "item": [
+        {
+          "name": "Course — Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/payments/course/intent", "host": ["{{base_url}}"], "path": ["payments","course","intent"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Course — Confirm Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/payments/course/confirm", "host": ["{{base_url}}"], "path": ["payments","course","confirm"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_intent_id\": \"pi_xxx\",\n  \"course_id\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Session — Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/payments/session/intent", "host": ["{{base_url}}"], "path": ["payments","session","intent"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_id\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Session — Confirm Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/payments/session/confirm", "host": ["{{base_url}}"], "path": ["payments","session","confirm"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_intent_id\": \"pi_xxx\",\n  \"session_id\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Subscription — Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/payments/subscription/intent", "host": ["{{base_url}}"], "path": ["payments","subscription","intent"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"monthly\",\n  \"role\": \"mentor\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Subscription — Confirm Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/payments/subscription/confirm", "host": ["{{base_url}}"], "path": ["payments","subscription","confirm"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_intent_id\": \"pi_xxx\",\n  \"plan\": \"monthly\",\n  \"role\": \"mentor\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Payment History",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/payments", "host": ["{{base_url}}"], "path": ["payments"] }
+          }
+        },
+        {
+          "name": "Payment Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/payments/1", "host": ["{{base_url}}"], "path": ["payments","1"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "System & Extra Endpoints",
+      "item": [
+        {
+          "name": "API Test",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api-test", "host": ["{{base_url}}"], "path": ["api-test"] }
+          }
+        },
+        {
+          "name": "Cache Clear (auth required)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/cache-clear", "host": ["{{base_url}}"], "path": ["cache-clear"] }
+          }
+        },
+        {
+          "name": "Mentor — Session Meeting Info (Jitsi)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/mentor/sessions/1/meeting-info", "host": ["{{base_url}}"], "path": ["mentor","sessions","1","meeting-info"] }
+          }
+        },
+        {
+          "name": "Mentor — Session Heartbeat",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/mentor/sessions/1/heartbeat", "host": ["{{base_url}}"], "path": ["mentor","sessions","1","heartbeat"] }
+          }
+        },
+        {
+          "name": "Student — Available Sessions by Mentor",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/sessions/available/1", "host": ["{{base_url}}"], "path": ["student","sessions","available","1"] }
+          }
+        },
+        {
+          "name": "Student — Reschedule Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/sessions/1/reschedule", "host": ["{{base_url}}"], "path": ["student","sessions","1","reschedule"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_session_id\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Student — Session Meeting Info (Jitsi)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/sessions/1/meeting-info", "host": ["{{base_url}}"], "path": ["student","sessions","1","meeting-info"] }
+          }
+        },
+        {
+          "name": "Student — Poll Session Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/sessions/1/status", "host": ["{{base_url}}"], "path": ["student","sessions","1","status"] }
+          }
+        },
+        {
+          "name": "Student — Lesson Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/courses/1/lessons/1", "host": ["{{base_url}}"], "path": ["student","courses","1","lessons","1"] }
+          }
+        },
+        {
+          "name": "Student — In-Progress Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/courses/in-progress?tab=ongoing", "host": ["{{base_url}}"], "path": ["student","courses","in-progress"], "query": [{ "key": "tab", "value": "ongoing" }] }
+          }
+        },
+        {
+          "name": "Student — Favorites List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/courses/favorites", "host": ["{{base_url}}"], "path": ["student","courses","favorites"] }
+          }
+        },
+        {
+          "name": "Student — Toggle Favorite",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/student/courses/1/favorite", "host": ["{{base_url}}"], "path": ["student","courses","1","favorite"] }
+          }
+        },
+        {
+          "name": "Broadcasting Auth (WebSocket)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/broadcasting/auth", "host": ["{{base_url}}"], "path": ["broadcasting","auth"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"socket_id\": \"12345.67890\",\n  \"channel_name\": \"private-conversation.1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
     }
 
   ]

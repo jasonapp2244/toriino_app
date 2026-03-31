@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Student;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\AppNotification;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\CourseCertificate;
 use App\Models\Lesson;
 use App\Models\LessonVideoProgress;
+use App\Models\CourseFavorite;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,6 +30,9 @@ class StudentCourseController extends Controller
             ->when($request->category_id, fn($q) => $q->where('category_id', $request->category_id))
             ->when($request->level_id,    fn($q) => $q->where('level_id', $request->level_id))
             ->when($request->language,    fn($q) => $q->where('language', $request->language))
+            ->when($request->min_price,  fn($q) => $q->where('price', '>=', $request->min_price))
+            ->when($request->max_price,  fn($q) => $q->where('price', '<=', $request->max_price))
+            ->when($request->min_rating, fn($q) => $q->where('rating', '>=', $request->min_rating))
             ->orderByDesc('total_enrollments')
             ->paginate(10);
 
@@ -66,6 +71,16 @@ class StudentCourseController extends Controller
         ]);
 
         $course->increment('total_enrollments');
+
+        // Notify teacher about the new enrollment
+        if ($course->teacher_id) {
+            AppNotification::create([
+                'user_id' => $course->teacher_id,
+                'title'   => 'New Course Enrollment',
+                'body'    => $student->name . ' enrolled in your course "' . $course->title . '".',
+                'type'    => 'course_enrolled',
+            ]);
+        }
 
         if ($course->teacher_id) {
             \App\Models\Earning::create([
@@ -365,6 +380,172 @@ class StudentCourseController extends Controller
         ], 'Lesson marked as completed.');
     }
 
+    // ─── In-Progress Courses ─────────────────────────────────────
+
+    public function inProgressCourses(Request $request): JsonResponse
+    {
+        $enrollments = $request->user()
+            ->enrolledCourses()
+            ->with(['course' => fn($q) => $q->with(['teacher', 'category', 'level'])])
+            ->where('status', 'active')
+            ->where('progress_percent', '>', 0)
+            ->latest()
+            ->get()
+            ->map(fn($e) => [
+                'enrollment_id'     => $e->id,
+                'enrollment_status' => $e->status,
+                'progress_percent'  => $e->progress_percent,
+                'enrolled_at'       => $e->created_at,
+                'course' => [
+                    'id'        => $e->course?->id,
+                    'title'     => $e->course?->title,
+                    'price'     => $e->course?->price,
+                    'is_free'   => ($e->course?->price ?? 0) == 0,
+                    'duration'  => $e->course?->duration,
+                    'thumbnail' => $e->course?->thumbnail
+                        ? asset('storage/' . $e->course->thumbnail)
+                        : null,
+                    'rating'    => $e->course?->rating,
+                    'category'  => $e->course?->category?->name,
+                    'level'     => $e->course?->level?->name,
+                    'teacher'   => $e->course?->teacher ? [
+                        'id'        => $e->course->teacher->id,
+                        'name'      => $e->course->teacher->name,
+                        'photo_url' => $e->course->teacher->photo_url,
+                    ] : null,
+                ],
+            ]);
+
+        return ApiResponse::success($enrollments);
+    }
+
+    // ─── Favorite Courses ─────────────────────────────────────────
+
+    public function listFavorites(Request $request): JsonResponse
+    {
+        $favorites = CourseFavorite::where('student_id', $request->user()->id)
+            ->with(['course' => fn($q) => $q->with(['teacher', 'category', 'level'])
+                ->where('status', 'published')])
+            ->get()
+            ->filter(fn($f) => $f->course !== null)
+            ->map(fn($f) => [
+                'favorite_id' => $f->id,
+                'course' => [
+                    'id'        => $f->course->id,
+                    'title'     => $f->course->title,
+                    'price'     => $f->course->price,
+                    'is_free'   => ($f->course->price ?? 0) == 0,
+                    'duration'  => $f->course->duration,
+                    'thumbnail' => $f->course->thumbnail
+                        ? asset('storage/' . $f->course->thumbnail)
+                        : null,
+                    'rating'    => $f->course->rating,
+                    'category'  => $f->course->category?->name,
+                    'level'     => $f->course->level?->name,
+                    'teacher'   => $f->course->teacher ? [
+                        'id'        => $f->course->teacher->id,
+                        'name'      => $f->course->teacher->name,
+                        'photo_url' => $f->course->teacher->photo_url,
+                    ] : null,
+                ],
+            ])
+            ->values();
+
+        return ApiResponse::success($favorites);
+    }
+
+    public function toggleFavorite(int $courseId, Request $request): JsonResponse
+    {
+        $course = Course::where('status', 'published')->find($courseId);
+        if (!$course) {
+            return ApiResponse::notFound('Course not found.');
+        }
+
+        $student  = $request->user();
+        $existing = CourseFavorite::where('student_id', $student->id)
+            ->where('course_id', $courseId)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+            return ApiResponse::success(['favorited' => false], 'Removed from favorites.');
+        }
+
+        CourseFavorite::create([
+            'student_id' => $student->id,
+            'course_id'  => $courseId,
+        ]);
+
+        return ApiResponse::success(['favorited' => true], 'Added to favorites.');
+    }
+
+    // ─── Lesson Detail ────────────────────────────────────────────
+
+    public function lessonDetail(int $courseId, int $lessonId, Request $request): JsonResponse
+    {
+        $user       = $request->user();
+        $enrollment = $user->enrolledCourses()
+            ->where('course_id', $courseId)
+            ->first();
+
+        $lesson = Lesson::with('attachments')
+            ->where('course_id', $courseId)
+            ->find($lessonId);
+
+        if (!$lesson) {
+            return ApiResponse::notFound('Lesson not found.');
+        }
+
+        // Free lessons are accessible without enrollment
+        if (!$enrollment && !$lesson->is_free) {
+            return ApiResponse::error('You must enroll in this course to access this lesson.', 403);
+        }
+
+        // Video progress for enrolled students
+        $videoProgress = null;
+        if ($enrollment) {
+            $vp = LessonVideoProgress::where('enrollment_id', $enrollment->id)
+                ->where('lesson_id', $lessonId)
+                ->first();
+            if ($vp) {
+                $videoProgress = [
+                    'percentage_watched'    => $vp->percentage_watched,
+                    'last_position_seconds' => $vp->last_position_seconds,
+                    'is_completed'          => $vp->is_completed,
+                    'watched_seconds'       => $vp->watched_seconds,
+                    'total_seconds'         => $vp->total_seconds,
+                ];
+            }
+        }
+
+        // Sequential lock check
+        $isLocked = false;
+        if ($enrollment && $lesson->order > 1) {
+            $completedIds = $enrollment->progress ?? [];
+            $prevLesson   = Lesson::where('course_id', $courseId)
+                ->where('order', $lesson->order - 1)
+                ->first();
+            if ($prevLesson && !in_array($prevLesson->id, $completedIds)) {
+                $isLocked = true;
+            }
+        }
+
+        return ApiResponse::success([
+            'id'             => $lesson->id,
+            'title'          => $lesson->title,
+            'description'    => $lesson->description,
+            'order'          => $lesson->order,
+            'duration'       => $lesson->duration,
+            'is_free'        => $lesson->is_free,
+            'video_url'      => $lesson->video_url,
+            'stream_url'     => $lesson->stream_url,
+            'video_status'   => $lesson->video_status,
+            'attachments'    => $lesson->attachments,
+            'is_locked'      => $isLocked,
+            'video_progress' => $videoProgress,
+        ]);
+    }
+
     // ─── Certificate ──────────────────────────────────────────────
 
     public function getCertificate(int $courseId, Request $request): JsonResponse
@@ -439,6 +620,15 @@ class StudentCourseController extends Controller
                 'completed_at' => now(),
             ]);
             $user->studentProfile?->increment('courses_completed');
+
+            // Notify student that their certificate is ready
+            $course = Course::find($enrollment->course_id);
+            AppNotification::create([
+                'user_id' => $user->id,
+                'title'   => 'Course Completed!',
+                'body'    => 'Congratulations! You completed "' . ($course->title ?? 'the course') . '". Your certificate is ready to download.',
+                'type'    => 'course_completed',
+            ]);
         }
 
         // Auto-issue certificate

@@ -45,4 +45,14 @@ return [
         'webhook_secret' => env('MUX_WEBHOOK_SECRET'),
     ],
 
+    'stripe' => [
+        'key'            => env('STRIPE_KEY'),
+        'secret'         => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'platform' => [
+        'commission_rate' => (float) env('PLATFORM_COMMISSION_RATE', 0.20),
+    ],
+
 ];

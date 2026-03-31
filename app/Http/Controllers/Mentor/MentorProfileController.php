@@ -42,10 +42,10 @@ class MentorProfileController extends Controller
             'short_bio'              => 'sometimes|string|max:1000',
             'specialization'         => 'sometimes|string|max:255',
             'industry'               => 'sometimes|string|max:150',   // name string from industries table
-            'expertise_list'         => 'sometimes|array',
+            'expertise_list'         => 'sometimes|array|max:50',
             'expertise_list.*'       => 'string|max:100',
             'preferred_student_level'=> 'sometimes|in:beginner,intermediate,advanced,all',
-            'languages_list'         => 'sometimes|array',
+            'languages_list'         => 'sometimes|array|max:50',
             'languages_list.*'       => 'string|max:100',             // name string from app_languages table
             'price_per_hour'         => 'sometimes|numeric|min:0',
             'experience_years'       => 'sometimes|integer|min:0|max:60',
@@ -164,9 +164,25 @@ class MentorProfileController extends Controller
         ], 'Intro video uploaded successfully.');
     }
 
-    public function publicProfile(int $id): JsonResponse
+    /**
+     * GET /mentors/{id}
+     * Public mentor profile viewed by students.
+     *
+     * Query params:
+     *   ?reviews_limit=N  (default: 5, max: 20)
+     */
+    public function publicProfile(int $id, Request $request): JsonResponse
     {
-        $user = \App\Models\User::with(['mentorProfile', 'availabilities', 'reviewsReceived.fromUser'])
+        $user = \App\Models\User::with([
+            'mentorProfile',
+            'availabilities',
+            'reviewsReceived.fromUser',
+            'mentorSessions' => fn($q) => $q
+                ->where('status', 'upcoming')
+                ->where('start_time', '>=', now())
+                ->orderBy('start_time')
+                ->limit(5),
+        ])
             ->whereHas('roles', fn($q) => $q->where('name', 'mentor'))
             ->find($id);
 
@@ -174,12 +190,42 @@ class MentorProfileController extends Controller
             return ApiResponse::notFound('Mentor not found.');
         }
 
+        $reviewsLimit = min((int) $request->query('reviews_limit', 5), 20);
+
+        $reviews = $user->reviewsReceived->take($reviewsLimit)->map(fn($r) => [
+            'id'         => $r->id,
+            'rating'     => $r->rating,
+            'comment'    => $r->comment,
+            'created_at' => $r->created_at,
+            'reviewer' => [
+                'id'        => $r->fromUser?->id,
+                'name'      => $r->fromUser?->full_name ?? $r->fromUser?->name,
+                'photo_url' => $r->fromUser?->photo_url,
+            ],
+        ]);
+
+        $upcomingSessions = $user->mentorSessions->map(fn($s) => [
+            'id'               => $s->id,
+            'title'            => $s->title,
+            'type'             => $s->type,
+            'start_time'       => $s->start_time,
+            'end_time'         => $s->end_time,
+            'duration_minutes' => $s->duration_minutes,
+            'price'            => $s->price,
+            'language'         => $s->language,
+            'seats_left'       => $s->seatsAvailable(),
+            'max_seats'        => $s->max_seats,
+        ]);
+
         return ApiResponse::success([
-            'id'           => $user->id,
-            'full_name'    => $user->full_name ?? $user->name,
-            'profile'      => $this->buildMentorProfile($user),
-            'availability' => $user->availabilities->where('is_available', true)->values(),
-            'reviews'      => $user->reviewsReceived->take(10),
+            'id'                  => $user->id,
+            'full_name'           => $user->full_name ?? $user->name,
+            'photo_url'           => $user->photo_url,
+            'profile'             => $this->buildMentorProfile($user),
+            'availability'        => $user->availabilities->where('is_available', true)->values(),
+            'upcoming_sessions'   => $upcomingSessions,
+            'reviews'             => $reviews,
+            'total_reviews'       => $user->reviewsReceived->count(),
         ]);
     }
 

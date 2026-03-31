@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('conversation_messages')) return;
         Schema::create('conversation_messages', function (Blueprint $table) {
             $table->id();
 

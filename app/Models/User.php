@@ -120,6 +120,11 @@ class User extends Authenticatable
         return $this->hasMany(CourseEnrollment::class, 'student_id');
     }
 
+    public function favoriteCourses()
+    {
+        return $this->hasMany(CourseFavorite::class, 'student_id');
+    }
+
     // ─── Earnings & Finance ──────────────────────────────────────
     public function earnings()
     {
@@ -214,13 +219,15 @@ class User extends Authenticatable
 
     public function getPhotoUrlAttribute(): ?string
     {
-        if (!$this->profile) {
+        // Use raw attribute to avoid conflict with the `profile` relationship name
+        $path = $this->attributes['profile'] ?? null;
+        if (!$path) {
             return null;
         }
-        if (str_starts_with($this->profile, 'http')) {
-            return $this->profile;
+        if (str_starts_with($path, 'http')) {
+            return $path;
         }
-        return asset('storage/' . $this->profile);
+        return asset('storage/' . $path);
     }
 
     public function hasPendingSwitch(): bool

@@ -81,6 +81,59 @@ class SearchController extends Controller
         return ApiResponse::success($mentors);
     }
 
+    public function teachers(Request $request): JsonResponse
+    {
+        $teachers = User::with(['profile', 'teacherProfile'])
+            ->withCount([
+                'courses as available_courses_count' => fn($q) => $q->where('status', 'published'),
+            ])
+            ->whereHas('roles', fn($r) => $r->where('name', 'teacher'))
+            ->whereHas('teacherProfile')
+            ->when($request->search, fn($q) =>
+                $q->where(fn($u) =>
+                    $u->where('name', 'like', '%' . $request->search . '%')
+                      ->orWhereHas('teacherProfile', fn($tp) =>
+                          $tp->where('subject', 'like', '%' . $request->search . '%')
+                             ->orWhere('designation', 'like', '%' . $request->search . '%')
+                             ->orWhereJsonContains('expertise_list', $request->search)
+                      )
+                )
+            )
+            ->when($request->subject, fn($q) =>
+                $q->whereHas('teacherProfile', fn($tp) => $tp->where('subject', 'like', '%' . $request->subject . '%'))
+            )
+            ->when($request->language, fn($q) =>
+                $q->whereHas('teacherProfile', fn($tp) => $tp->where('languages', 'like', '%' . $request->language . '%'))
+            )
+            ->when($request->verified, fn($q) =>
+                $q->whereHas('teacherProfile', fn($tp) => $tp->where('is_verified', true))
+            )
+            ->orderByDesc(
+                \App\Models\TeacherProfile::select('rating')
+                    ->whereColumn('user_id', 'users.id')
+                    ->limit(1)
+            )
+            ->paginate(10)
+            ->through(fn($t) => [
+                'id'               => $t->id,
+                'name'             => $t->name,
+                'full_name'        => $t->full_name ?? $t->name,
+                'photo_url'        => $t->photo_url,
+                'designation'      => $t->teacherProfile?->designation,
+                'subject'          => $t->teacherProfile?->subject,
+                'short_bio'        => $t->teacherProfile?->short_bio,
+                'expertise_list'   => $t->teacherProfile?->expertise_list ?? [],
+                'languages_list'   => $t->teacherProfile?->languages_list ?? [],
+                'rating'           => $t->teacherProfile?->rating,
+                'total_reviews'    => $t->teacherProfile?->total_reviews,
+                'is_verified'      => $t->teacherProfile?->is_verified,
+                'experience_years' => $t->teacherProfile?->experience_years,
+                'available_courses'=> $t->available_courses_count ?? 0,
+            ]);
+
+        return ApiResponse::success($teachers);
+    }
+
     public function privacyPolicy(): JsonResponse
     {
         $policy = \App\Models\PrivacyPolicy::getActive();

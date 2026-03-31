@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Mentor;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Mentor\StoreSessionRequest;
+use App\Models\AppNotification;
 use App\Models\MentorSession;
+use App\Services\EarningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -115,14 +117,17 @@ class MentorSessionController extends Controller
             'price'            => $request->price,
             'duration_minutes' => $request->duration_minutes,
             'join_key'         => $isGroup ? $this->generateJoinKey() : null,
+            'meeting_room_id'  => 'torrino-' . Str::uuid(),
         ]);
 
         return ApiResponse::created($this->formatSession($session), 'Session created');
     }
 
-    public function show(int $id): JsonResponse
+    public function show(int $id, Request $request): JsonResponse
     {
-        $session = MentorSession::with(['bookings.student.profile', 'reviews.fromUser.profile'])->find($id);
+        $session = MentorSession::where('mentor_id', $request->user()->id)
+            ->with(['bookings.student.profile', 'reviews.fromUser.profile'])
+            ->find($id);
 
         if (!$session) {
             return ApiResponse::notFound('Session not found');
@@ -161,6 +166,32 @@ class MentorSessionController extends Controller
         $session->update($data);
 
         return ApiResponse::success($this->formatSession($session->fresh()), 'Session updated.');
+    }
+
+    // ─── Heartbeat (keep-alive) ───────────────────────────────────
+
+    /**
+     * POST /mentor/sessions/{id}/heartbeat
+     * Mentor app calls this every ~30s while in the video call.
+     * Used to detect orphaned (abandoned) ongoing sessions.
+     */
+    public function heartbeat(int $id, Request $request): JsonResponse
+    {
+        $session = MentorSession::where('mentor_id', $request->user()->id)
+            ->where('status', 'ongoing')
+            ->find($id);
+
+        if (!$session) {
+            return ApiResponse::notFound('Active session not found.');
+        }
+
+        $session->update(['mentor_last_ping_at' => now()]);
+
+        return ApiResponse::success([
+            'session_id' => $session->id,
+            'status'     => $session->status,
+            'pinged_at'  => $session->mentor_last_ping_at,
+        ], 'Heartbeat recorded.');
     }
 
     // ─── Join Key ─────────────────────────────────────────────────
@@ -217,6 +248,36 @@ class MentorSessionController extends Controller
 
     // ─── Session Lifecycle ────────────────────────────────────────
 
+    /**
+     * GET /mentor/sessions/{id}/meeting-info
+     * Returns the Jitsi meeting room details for a session (mentor only).
+     */
+    public function getMeetingInfo(int $id, Request $request): JsonResponse
+    {
+        $session = MentorSession::where('mentor_id', $request->user()->id)->find($id);
+
+        if (!$session) {
+            return ApiResponse::notFound('Session not found.');
+        }
+
+        // Auto-assign meeting_room_id if missing (for sessions created before this feature)
+        if (!$session->meeting_room_id) {
+            $session->update(['meeting_room_id' => 'torrino-' . Str::uuid()]);
+        }
+
+        return ApiResponse::success([
+            'session_id'      => $session->id,
+            'title'           => $session->title,
+            'type'            => $session->type,
+            'status'          => $session->status,
+            'meeting_room_id' => $session->meeting_room_id,
+            'jitsi_room'      => $session->meeting_room_id,
+            'join_key'        => $session->type === 'group' ? $session->join_key : null,
+            'start_time'      => $session->start_time,
+            'end_time'        => $session->end_time,
+        ]);
+    }
+
     public function startSession(int $id, Request $request): JsonResponse
     {
         $session = MentorSession::where('mentor_id', $request->user()->id)->find($id);
@@ -225,9 +286,39 @@ class MentorSessionController extends Controller
             return ApiResponse::notFound('Session not found');
         }
 
-        $session->update(['status' => 'ongoing']);
+        if (!in_array($session->status, ['upcoming', 'ongoing'])) {
+            return ApiResponse::error(
+                'Session cannot be started (current status: ' . $session->status . ').',
+                422,
+                ['session_status' => $session->status]
+            );
+        }
 
-        return ApiResponse::success($session, 'Session started');
+        // Auto-assign meeting_room_id if missing
+        if (!$session->meeting_room_id) {
+            $session->update(['meeting_room_id' => 'torrino-' . Str::uuid()]);
+            $session->refresh();
+        }
+
+        if ($session->status !== 'ongoing') {
+            $session->update(['status' => 'ongoing']);
+
+            // Notify all booked students that the session has started
+            foreach ($session->bookings()->where('status', 'confirmed')->get() as $booking) {
+                AppNotification::create([
+                    'user_id' => $booking->student_id,
+                    'title'   => 'Session Started',
+                    'body'    => 'Your session "' . $session->title . '" has started. Join now!',
+                    'type'    => 'session_started',
+                ]);
+            }
+        }
+
+        return ApiResponse::success([
+            'session'         => $this->formatSession($session->fresh()),
+            'meeting_room_id' => $session->meeting_room_id,
+            'jitsi_room'      => $session->meeting_room_id,
+        ], 'Session started');
     }
 
     public function completeSession(int $id, Request $request): JsonResponse
@@ -238,16 +329,29 @@ class MentorSessionController extends Controller
             return ApiResponse::notFound('Session not found');
         }
 
+        if ($session->status !== 'ongoing') {
+            return ApiResponse::error(
+                'Only an ongoing session can be completed (current status: ' . $session->status . ').',
+                422,
+                ['session_status' => $session->status]
+            );
+        }
+
         $session->update(['status' => 'completed']);
 
+        // Notify all booked students
         foreach ($session->bookings()->where('status', 'confirmed')->get() as $booking) {
-            $request->user()->earnings()->create([
-                'amount'         => $session->price,
-                'type'           => 'session',
-                'description'    => 'Session: ' . $session->title,
-                'reference_id'   => $session->id,
-                'reference_type' => 'MentorSession',
+            AppNotification::create([
+                'user_id' => $booking->student_id,
+                'title'   => 'Session Completed',
+                'body'    => 'Your session "' . $session->title . '" has been completed. You can now leave a review.',
+                'type'    => 'session_completed',
             ]);
+        }
+
+        // Create earning once per session (idempotent via firstOrCreate in EarningService)
+        if ($session->price > 0) {
+            app(EarningService::class)->createForSession($request->user()->id, $session);
         }
 
         return ApiResponse::success($session, 'Session completed');
@@ -296,22 +400,23 @@ class MentorSessionController extends Controller
         }
 
         return [
-            'id'             => $session->id,
-            'title'          => $session->title,
-            'type'           => $session->type,
-            'start_time'     => $session->start_time,
-            'end_time'       => $session->end_time,
-            'duration_mins'  => $session->duration_minutes,
-            'language'       => $session->language,
-            'price'          => $session->price,
-            'status'         => $session->status,
-            'max_seats'      => $session->max_seats,
-            'seats_booked'   => $session->seats_booked,
-            'seats_left'     => $session->seatsAvailable(),
-            'is_group'       => $session->type === 'group',
-            'join_key'       => $session->type === 'group' ? $session->join_key : null,
-            'primary_student'=> $primaryStudent,
-            'bookings'       => $bookings,
+            'id'              => $session->id,
+            'title'           => $session->title,
+            'type'            => $session->type,
+            'start_time'      => $session->start_time,
+            'end_time'        => $session->end_time,
+            'duration_mins'   => $session->duration_minutes,
+            'language'        => $session->language,
+            'price'           => $session->price,
+            'status'          => $session->status,
+            'max_seats'       => $session->max_seats,
+            'seats_booked'    => $session->seats_booked,
+            'seats_left'      => $session->seatsAvailable(),
+            'is_group'        => $session->type === 'group',
+            'join_key'        => $session->type === 'group' ? $session->join_key : null,
+            'meeting_room_id' => $session->meeting_room_id,
+            'primary_student' => $primaryStudent,
+            'bookings'        => $bookings,
         ];
     }
 

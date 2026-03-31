@@ -6,6 +6,8 @@ use App\Models\AiChat;
 use App\Models\AppNotification;
 use App\Models\Availability;
 use App\Models\Course;
+use App\Models\CourseCategory;
+use App\Models\CourseLevel;
 use App\Models\Lesson;
 use App\Models\MentorSession;
 use App\Models\PrivacyPolicy;
@@ -75,6 +77,7 @@ class SampleDataSeeder extends Seeder
                 'end_time'         => now()->addDays(2)->setHour(11)->setMinute(0)->setSecond(0),
                 'duration_minutes' => 60,
                 'max_seats'        => 10,
+                'seats_booked'     => 0,
                 'language'         => 'English',
                 'price'            => 25.00,
                 'status'           => 'upcoming',
@@ -86,6 +89,7 @@ class SampleDataSeeder extends Seeder
                 'end_time'         => now()->addDays(4)->setHour(15)->setMinute(0)->setSecond(0),
                 'duration_minutes' => 60,
                 'max_seats'        => 1,
+                'seats_booked'     => 0,
                 'language'         => 'English',
                 'price'            => 50.00,
                 'status'           => 'upcoming',
@@ -97,9 +101,22 @@ class SampleDataSeeder extends Seeder
                 'end_time'         => now()->subDays(5)->setHour(11)->setMinute(0)->setSecond(0),
                 'duration_minutes' => 60,
                 'max_seats'        => 15,
+                'seats_booked'     => 1,
                 'language'         => 'English',
                 'price'            => 15.00,
                 'status'           => 'completed',
+            ],
+            [
+                'title'            => 'React Native — Mobile App Workshop',
+                'type'             => 'group',
+                'start_time'       => now()->addDays(7)->setHour(11)->setMinute(0)->setSecond(0),
+                'end_time'         => now()->addDays(7)->setHour(13)->setMinute(0)->setSecond(0),
+                'duration_minutes' => 120,
+                'max_seats'        => 8,
+                'seats_booked'     => 0,
+                'language'         => 'English',
+                'price'            => 35.00,
+                'status'           => 'upcoming',
             ],
         ];
 
@@ -110,19 +127,45 @@ class SampleDataSeeder extends Seeder
             );
         }
 
+        // ─── Resolve category & level IDs ────────────────────────
+        $mathCategory = CourseCategory::where('slug', 'mathematics')->first();
+        $webCategory  = CourseCategory::where('slug', 'web-development')->first();
+        $beginnerLevel = CourseLevel::where('slug', 'beginner')->first();
+        $intermedLevel = CourseLevel::where('slug', 'intermediate')->first();
+
         // ─── Course ──────────────────────────────────────────────
         $course = Course::updateOrCreate(
             ['teacher_id' => $teacher->id, 'title' => 'Complete Mathematics for Beginners'],
             [
                 'description'       => 'A comprehensive course covering algebra, geometry, and calculus from scratch.',
-                'category'          => 'Mathematics',
+                'category_id'       => $mathCategory?->id,
+                'level_id'          => $beginnerLevel?->id,
                 'language'          => 'English',
                 'duration'          => '12 hours',
                 'price'             => 49.99,
                 'platform_fee'      => 5.00,
                 'status'            => 'published',
-                'total_enrollments' => 3,
+                'total_enrollments' => 1,
                 'rating'            => 4.7,
+                'tags'              => ['math', 'algebra', 'calculus', 'geometry'],
+            ]
+        );
+
+        // ─── Second Course ───────────────────────────────────────
+        $course2 = Course::updateOrCreate(
+            ['teacher_id' => $teacher->id, 'title' => 'Web Development Bootcamp'],
+            [
+                'description'       => 'Learn HTML, CSS, JavaScript, and PHP from scratch to build real-world web applications.',
+                'category_id'       => $webCategory?->id,
+                'level_id'          => $beginnerLevel?->id,
+                'language'          => 'English',
+                'duration'          => '20 hours',
+                'price'             => 79.99,
+                'platform_fee'      => 8.00,
+                'status'            => 'published',
+                'total_enrollments' => 0,
+                'rating'            => 4.5,
+                'tags'              => ['html', 'css', 'javascript', 'php'],
             ]
         );
 
@@ -138,6 +181,26 @@ class SampleDataSeeder extends Seeder
         foreach ($lessons as $lesson) {
             Lesson::firstOrCreate(
                 ['course_id' => $course->id, 'title' => $lesson['title']],
+                [
+                    'video_url' => 'https://example.com/videos/' . \Str::slug($lesson['title']),
+                    'order'     => $lesson['order'],
+                    'is_free'   => $lesson['is_free'],
+                    'duration'  => $lesson['duration'],
+                ]
+            );
+        }
+
+        $lessons2 = [
+            ['title' => 'HTML Foundations',          'order' => 1, 'is_free' => true,  'duration' => '40 min'],
+            ['title' => 'CSS Styling & Layouts',     'order' => 2, 'is_free' => true,  'duration' => '55 min'],
+            ['title' => 'JavaScript Basics',         'order' => 3, 'is_free' => false, 'duration' => '70 min'],
+            ['title' => 'PHP & MySQL Intro',         'order' => 4, 'is_free' => false, 'duration' => '60 min'],
+            ['title' => 'Build a Full CRUD App',     'order' => 5, 'is_free' => false, 'duration' => '90 min'],
+        ];
+
+        foreach ($lessons2 as $lesson) {
+            Lesson::firstOrCreate(
+                ['course_id' => $course2->id, 'title' => $lesson['title']],
                 [
                     'video_url' => 'https://example.com/videos/' . \Str::slug($lesson['title']),
                     'order'     => $lesson['order'],
@@ -228,8 +291,8 @@ class SampleDataSeeder extends Seeder
         $this->command->info('✅ Sample data seeded successfully.');
         $this->command->info('   - 2 subscriptions (mentor + teacher)');
         $this->command->info('   - 5 availability slots for mentor');
-        $this->command->info('   - 3 mentor sessions (2 upcoming, 1 completed)');
-        $this->command->info('   - 1 course with 6 lessons');
-        $this->command->info('   - 2 reviews, 5 notifications, 2 AI chats');
+        $this->command->info('   - 4 mentor sessions (3 upcoming, 1 completed)');
+        $this->command->info('   - 2 courses with lessons (6 + 5 lessons)');
+        $this->command->info('   - 2 reviews, 5 notifications, 2 AI chats, 1 privacy policy');
     }
 }

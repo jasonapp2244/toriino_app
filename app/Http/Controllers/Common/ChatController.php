@@ -10,6 +10,7 @@ use App\Models\ConversationMessage;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * One-to-one chat between any two users regardless of role.
@@ -231,9 +232,10 @@ class ChatController extends Controller
         $query = User::where('id', '!=', $request->user()->id)
             ->where('status', 'active')
             ->where(function ($q) use ($request) {
-                $q->where('full_name', 'like', '%' . $request->q . '%')
-                  ->orWhere('name', 'like', '%' . $request->q . '%')
-                  ->orWhere('email', 'like', '%' . $request->q . '%');
+                $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $request->q);
+                $q->where('full_name', 'like', '%' . $escaped . '%')
+                  ->orWhere('name', 'like', '%' . $escaped . '%')
+                  ->orWhere('email', 'like', '%' . $escaped . '%');
             });
 
         if ($request->filled('role')) {

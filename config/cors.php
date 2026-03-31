@@ -15,20 +15,22 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'broadcasting/*'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => env('CORS_ALLOWED_ORIGINS', '*') === '*'
+        ? ['*']
+        : explode(',', env('CORS_ALLOWED_ORIGINS', '*')),
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Socket-ID'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['X-RateLimit-Limit', 'X-RateLimit-Remaining'],
 
-    'max_age' => 0,
+    'max_age' => 86400,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

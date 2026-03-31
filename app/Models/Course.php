@@ -21,6 +21,8 @@ class Course extends Model
         'rating',
         'total_enrollments',
         'status',
+        'is_live',
+        'tags',
     ];
 
     protected $casts = [
@@ -28,6 +30,8 @@ class Course extends Model
         'platform_fee'      => 'float',
         'rating'            => 'float',
         'total_enrollments' => 'integer',
+        'is_live'           => 'boolean',
+        'tags'              => 'array',
     ];
 
     public function category()

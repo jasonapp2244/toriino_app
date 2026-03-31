@@ -126,12 +126,30 @@ class TeacherProfileController extends Controller
         ], 'Intro video uploaded.');
     }
 
-    public function publicProfile(int $id): JsonResponse
+    /**
+     * GET /teachers/{id}
+     * Public teacher profile viewed by students.
+     *
+     * Query params:
+     *   ?sort=latest|popular|price_asc|price_desc  (default: latest)
+     *   ?reviews_limit=N                           (default: 5)
+     */
+    public function publicProfile(int $id, Request $request): JsonResponse
     {
+        $sort = $request->query('sort', 'latest');
+
+        $coursesQuery = fn($q) => $q
+            ->where('status', 'published')
+            ->with(['category', 'level'])
+            ->when($sort === 'popular',    fn($q) => $q->orderByDesc('total_enrollments'))
+            ->when($sort === 'price_asc',  fn($q) => $q->orderBy('price'))
+            ->when($sort === 'price_desc', fn($q) => $q->orderByDesc('price'))
+            ->when(!in_array($sort, ['popular', 'price_asc', 'price_desc']), fn($q) => $q->latest());
+
         $user = \App\Models\User::with([
             'teacherProfile',
-            'courses' => fn($q) => $q->where('status', 'published'),
-            'reviewsReceived.fromUser',
+            'courses'              => $coursesQuery,
+            'reviewsReceived.fromUser.profile',
         ])
             ->whereHas('roles', fn($q) => $q->where('name', 'teacher'))
             ->find($id);
@@ -140,12 +158,52 @@ class TeacherProfileController extends Controller
             return ApiResponse::notFound('Teacher not found.');
         }
 
+        $reviewsLimit = min((int) $request->query('reviews_limit', 5), 20);
+
+        $courses = $user->courses->map(fn($c) => [
+            'id'               => $c->id,
+            'title'            => $c->title,
+            'description'      => $c->description,
+            'price'            => $c->price,
+            'is_free'          => ($c->price ?? 0) == 0,
+            'is_live'          => (bool) $c->is_live,
+            'duration'         => $c->duration,
+            'language'         => $c->language,
+            'rating'           => $c->rating,
+            'total_enrollments'=> $c->total_enrollments,
+            'thumbnail'        => $c->thumbnail ? asset('storage/' . $c->thumbnail) : null,
+            'category'         => $c->category?->name,
+            'level'            => $c->level?->name,
+            'teacher' => [
+                'id'        => $user->id,
+                'name'      => $user->name,
+                'photo_url' => $user->photo_url,
+                'rating'    => $user->teacherProfile?->rating,
+            ],
+        ]);
+
+        $reviews = $user->reviewsReceived->take($reviewsLimit)->map(fn($r) => [
+            'id'         => $r->id,
+            'rating'     => $r->rating,
+            'comment'    => $r->comment,
+            'created_at' => $r->created_at,
+            'reviewer' => [
+                'id'        => $r->fromUser?->id,
+                'name'      => $r->fromUser?->name,
+                'photo_url' => $r->fromUser?->photo_url,
+            ],
+        ]);
+
         return ApiResponse::success([
-            'id'        => $user->id,
-            'full_name' => $user->full_name ?? $user->name,
-            'profile'   => $this->buildTeacherProfile($user),
-            'courses'   => $user->courses,
-            'reviews'   => $user->reviewsReceived->take(10),
+            'id'           => $user->id,
+            'full_name'    => $user->full_name ?? $user->name,
+            'photo_url'    => $user->photo_url,
+            'profile'      => $this->buildTeacherProfile($user),
+            'courses'      => $courses,
+            'courses_count'=> $user->courses->count(),
+            'reviews'      => $reviews,
+            'total_reviews'=> $user->reviewsReceived->count(),
+            'sort'         => $sort,
         ]);
     }
 

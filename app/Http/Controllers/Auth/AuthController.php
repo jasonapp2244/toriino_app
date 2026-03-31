@@ -45,10 +45,16 @@ class AuthController extends Controller
 
         if ($existing) {
             $existing->update([
-                'full_name' => $request->full_name,
-                'name'      => $request->full_name,
-                'password'  => Hash::make($request->password),
-                'role'      => $request->role ?? $existing->role,
+                'full_name'   => $request->full_name,
+                'name'        => $request->full_name,
+                'password'    => Hash::make($request->password),
+                'role'        => $request->role ?? $existing->role,
+                'phone'       => $request->phone       ?? $existing->phone,
+                'timezone'    => $request->timezone    ?? $existing->timezone,
+                'language'    => $request->language    ?? $existing->language,
+                'device_id'   => $request->device_id   ?? $existing->device_id,
+                'device_type' => $request->device_type ?? $existing->device_type,
+                'fcm_token'   => $request->fcm_token   ?? $existing->fcm_token,
             ]);
             $user = $existing->fresh();
         }
@@ -218,17 +224,24 @@ class AuthController extends Controller
             ?? User::where('email', $request->email)->first();
 
         if ($user) {
-            // Existing user — update social info
+            // Existing user — update social info and sync role if changed
             $user->update([
-                'provider'       => $request->provider,
-                'provider_id'    => $request->provider_id,
-                'is_verified'    => true,
+                'provider'          => $request->provider,
+                'provider_id'       => $request->provider_id,
+                'is_verified'       => true,
                 'email_verified_at' => $user->email_verified_at ?? now(),
-                'last_active_at' => now(),
-                'fcm_token'      => $request->fcm_token   ?? $user->fcm_token,
-                'device_id'      => $request->device_id   ?? $user->device_id,
-                'device_type'    => $request->device_type ?? $user->device_type,
+                'last_active_at'    => now(),
+                'fcm_token'         => $request->fcm_token   ?? $user->fcm_token,
+                'device_id'         => $request->device_id   ?? $user->device_id,
+                'device_type'       => $request->device_type ?? $user->device_type,
             ]);
+
+            // Ensure Spatie role is in sync with the stored role column
+            $storedRole = $user->role ?? $user->getRoleNames()->first();
+            if ($storedRole && !$user->hasRole($storedRole)) {
+                $user->syncRoles([$storedRole]);
+                $this->createRoleProfile($user, $storedRole);
+            }
         } else {
             // New social user
             $user = User::create([

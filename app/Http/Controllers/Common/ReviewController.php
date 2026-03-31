@@ -15,9 +15,9 @@ class ReviewController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'to_user_id' => 'nullable|exists:users,id',
-            'session_id' => 'nullable|exists:mentor_sessions,id',
-            'course_id'  => 'nullable|exists:courses,id',
+            'to_user_id' => 'required_without_all:session_id,course_id|nullable|exists:users,id',
+            'session_id' => 'required_without_all:to_user_id,course_id|nullable|exists:mentor_sessions,id',
+            'course_id'  => 'required_without_all:to_user_id,session_id|nullable|exists:courses,id',
             'rating'     => 'required|numeric|min:1|max:5',
             'comment'    => 'nullable|string|max:500',
         ]);
@@ -60,11 +60,39 @@ class ReviewController extends Controller
     public function indexForUser(int $userId): JsonResponse
     {
         $reviews = Review::where('to_user_id', $userId)
-            ->with('fromUser.profile')
+            ->with('fromUser')
             ->orderByDesc('created_at')
             ->paginate(10);
 
-        return ApiResponse::success($reviews);
+        $allRatings = Review::where('to_user_id', $userId)->pluck('rating');
+
+        $ratingAverage = $allRatings->isNotEmpty()
+            ? round($allRatings->avg(), 1)
+            : 0;
+
+        $distribution = [];
+        for ($star = 5; $star >= 1; $star--) {
+            $distribution[$star] = $allRatings->filter(fn($r) => (int) round($r) === $star)->count();
+        }
+
+        $reviewsData = $reviews->through(fn($r) => [
+            'id'         => $r->id,
+            'rating'     => $r->rating,
+            'comment'    => $r->comment,
+            'created_at' => $r->created_at,
+            'reviewer'   => [
+                'id'        => $r->fromUser?->id,
+                'name'      => $r->fromUser?->full_name ?? $r->fromUser?->name,
+                'photo_url' => $r->fromUser?->photo_url,
+            ],
+        ]);
+
+        return ApiResponse::success([
+            'rating_average'      => $ratingAverage,
+            'total_reviews'       => $allRatings->count(),
+            'rating_distribution' => $distribution,
+            'reviews'             => $reviewsData,
+        ]);
     }
 
     public function indexForCourse(int $courseId): JsonResponse
