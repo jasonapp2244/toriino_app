@@ -64,10 +64,14 @@ class StudentCourseController extends Controller
             return ApiResponse::error('Already enrolled in this course');
         }
 
+        if ($course->price > 0) {
+            return ApiResponse::error('This is a paid course. Please complete payment to enroll.', 402);
+        }
+
         $enrollment = CourseEnrollment::create([
             'course_id'  => $course->id,
             'student_id' => $student->id,
-            'amount_paid'=> $course->price,
+            'amount_paid'=> 0,
         ]);
 
         $course->increment('total_enrollments');
@@ -79,17 +83,6 @@ class StudentCourseController extends Controller
                 'title'   => 'New Course Enrollment',
                 'body'    => $student->name . ' enrolled in your course "' . $course->title . '".',
                 'type'    => 'course_enrolled',
-            ]);
-        }
-
-        if ($course->teacher_id) {
-            \App\Models\Earning::create([
-                'user_id'        => $course->teacher_id,
-                'amount'         => $course->price - $course->platform_fee,
-                'type'           => 'course',
-                'description'    => 'Enrollment: ' . $course->title,
-                'reference_id'   => $course->id,
-                'reference_type' => 'Course',
             ]);
         }
 

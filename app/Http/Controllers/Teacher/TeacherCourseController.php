@@ -92,12 +92,11 @@ class TeacherCourseController extends Controller
             'level_id'     => 'sometimes|exists:course_levels,id',
             'language'     => 'sometimes|string',
             'price'        => 'sometimes|numeric|min:0',
-            'platform_fee' => 'sometimes|numeric|min:0',
         ]);
 
         $course->update($request->only([
             'title', 'description', 'category_id', 'level_id',
-            'language', 'price', 'platform_fee', 'duration',
+            'language', 'price', 'duration',
         ]));
 
         return ApiResponse::success($course, 'Course updated');
@@ -281,7 +280,8 @@ class TeacherCourseController extends Controller
                 'instructions'=> 'PUT the video file directly to upload_url. Mux will process it and notify via webhook.',
             ], 'Mux upload URL generated.');
         } catch (\Throwable $e) {
-            return ApiResponse::error('Failed to create Mux upload: ' . $e->getMessage(), 500);
+            \Log::error('Mux upload initialization failed', ['error' => $e->getMessage()]);
+            return ApiResponse::error('Video upload failed. Please try again later.', 500);
         }
     }
 

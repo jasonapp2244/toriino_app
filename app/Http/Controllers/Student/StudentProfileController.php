@@ -211,10 +211,10 @@ class StudentProfileController extends Controller
     public function uploadPhoto(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:3072',
+            'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:3072',
         ]);
 
-        $path = $request->file('image')->store('student-photos', 'public');
+        $path = $request->file('photo')->store('student-photos', 'public');
 
         $request->user()->studentProfile()->updateOrCreate(
             ['user_id' => $request->user()->id],

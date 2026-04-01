@@ -66,7 +66,6 @@ class AuthController extends Controller
         return ApiResponse::created([
             'email'   => $user->email,
             'message' => 'OTP sent to your email. Valid for 10 minutes.',
-            'otp_dev' => app()->environment('local') ? $otp : null,
         ], 'Registration initiated. Please verify OTP.');
     }
 
@@ -148,9 +147,7 @@ class AuthController extends Controller
 
         SendOtpEmailJob::dispatch($user, $otp, true);
 
-        return ApiResponse::success([
-            'otp_dev' => app()->environment('local') ? $otp : null,
-        ], 'New OTP sent.');
+        return ApiResponse::success(null, 'New OTP sent.');
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -170,7 +167,6 @@ class AuthController extends Controller
             return ApiResponse::error('Account not verified. A new OTP has been sent.', 403, [
                 'require_otp' => true,
                 'email'       => $user->email,
-                'otp_dev'     => app()->environment('local') ? $otp : null,
             ]);
         }
 
@@ -294,8 +290,7 @@ class AuthController extends Controller
         SendForgotPasswordEmailJob::dispatch($user, $otp);
 
         return ApiResponse::success([
-            'email'   => $user->email,
-            'otp_dev' => app()->environment('local') ? $otp : null,
+            'email' => $user->email,
         ], 'Password reset OTP sent to your email.');
     }
 

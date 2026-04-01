@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\SessionBooking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StudentSessionController extends Controller
 {
@@ -114,6 +115,10 @@ class StudentSessionController extends Controller
 
         $session = MentorSession::find($request->session_id);
 
+        if (!$session) {
+            return ApiResponse::notFound('Session not found.');
+        }
+
         if ($session->status !== 'upcoming') {
             return ApiResponse::error('Session is not available for booking');
         }
@@ -130,23 +135,35 @@ class StudentSessionController extends Controller
             return ApiResponse::error('You have already booked this session');
         }
 
-        $booking = SessionBooking::create([
-            'session_id' => $session->id,
-            'student_id' => $request->user()->id,
-            'status'     => 'confirmed',
-        ]);
+        if ($session->price > 0) {
+            return ApiResponse::error('This is a paid session. Please complete payment to book.', 402);
+        }
 
-        $session->increment('seats_booked');
+        return DB::transaction(function () use ($session, $request) {
+            $session = MentorSession::lockForUpdate()->find($session->id);
 
-        // Notify mentor about the new booking
-        AppNotification::create([
-            'user_id' => $session->mentor_id,
-            'title'   => 'New Session Booking',
-            'body'    => $request->user()->name . ' booked your session "' . $session->title . '".',
-            'type'    => 'session_booked',
-        ]);
+            if ($session->seatsAvailable() <= 0) {
+                return ApiResponse::error('No seats available');
+            }
 
-        return ApiResponse::created($booking->load('session'), 'Session booked successfully');
+            $booking = SessionBooking::create([
+                'session_id' => $session->id,
+                'student_id' => $request->user()->id,
+                'status'     => 'confirmed',
+            ]);
+
+            $session->increment('seats_booked');
+
+            // Notify mentor about the new booking
+            AppNotification::create([
+                'user_id' => $session->mentor_id,
+                'title'   => 'New Session Booking',
+                'body'    => $request->user()->name . ' booked your session "' . $session->title . '".',
+                'type'    => 'session_booked',
+            ]);
+
+            return ApiResponse::created($booking->load('session'), 'Session booked successfully');
+        });
     }
 
     /**
@@ -272,7 +289,9 @@ class StudentSessionController extends Controller
         }
 
         $booking->update(['status' => 'cancelled']);
-        $booking->session->decrement('seats_booked');
+        if ($booking->session->seats_booked > 0) {
+            $booking->session->decrement('seats_booked');
+        }
 
         return ApiResponse::success(null, 'Booking cancelled');
     }
@@ -316,15 +335,30 @@ class StudentSessionController extends Controller
             return ApiResponse::error('You have already joined this session.');
         }
 
-        $booking = SessionBooking::create([
-            'session_id' => $session->id,
-            'student_id' => $request->user()->id,
-            'status'     => 'confirmed',
-        ]);
+        if ($session->price > 0) {
+            return ApiResponse::error('This is a paid session. Please complete payment to book.', 402);
+        }
 
-        $session->increment('seats_booked');
+        return DB::transaction(function () use ($session, $request) {
+            $session = MentorSession::lockForUpdate()->find($session->id);
 
-        return ApiResponse::created([
+            if ($session->seatsAvailable() <= 0) {
+                return ApiResponse::error(
+                    'This group session is full. Maximum ' . $session->max_seats . ' students allowed.',
+                    422,
+                    ['seats_left' => 0, 'max_seats' => $session->max_seats]
+                );
+            }
+
+            $booking = SessionBooking::create([
+                'session_id' => $session->id,
+                'student_id' => $request->user()->id,
+                'status'     => 'confirmed',
+            ]);
+
+            $session->increment('seats_booked');
+
+            return ApiResponse::created([
             'booking'      => $booking,
             'session'      => [
                 'id'           => $session->id,
@@ -338,6 +372,7 @@ class StudentSessionController extends Controller
                 'max_seats'    => $session->max_seats,
             ],
         ], 'Successfully joined the group session! Payment will be processed at session time.');
+        });
     }
 
     /**
@@ -370,6 +405,10 @@ class StudentSessionController extends Controller
         }
 
         $newSession = MentorSession::find($request->new_session_id);
+
+        if (!$newSession) {
+            return ApiResponse::notFound('New session not found.');
+        }
 
         if ($newSession->mentor_id !== $oldSession->mentor_id) {
             return ApiResponse::error('You can only reschedule to a session by the same mentor.', 422);

@@ -84,7 +84,11 @@ class MuxService
     {
         $secret = config('services.mux.webhook_secret');
         if (!$secret) {
-            return true; // Skip verification in dev if secret not set
+            if (app()->environment('production')) {
+                throw new \RuntimeException('MUX_WEBHOOK_SECRET must be configured in production');
+            }
+            \Log::warning('Mux webhook verification skipped - no secret configured');
+            return true;
         }
 
         $expected = hash_hmac('sha256', $rawBody, $secret);

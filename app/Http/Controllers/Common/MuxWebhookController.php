@@ -40,6 +40,7 @@ class MuxWebhookController extends Controller
         $assetId  = $data['id'] ?? null;
 
         if (!$uploadId || !$assetId) {
+            \Log::warning('Mux webhook missing data', ['data' => $data]);
             return;
         }
 
@@ -56,6 +57,7 @@ class MuxWebhookController extends Controller
         $duration   = (int) round($data['duration'] ?? 0);
 
         if (!$assetId) {
+            \Log::warning('Mux webhook missing data', ['data' => $data]);
             return;
         }
 
@@ -71,6 +73,7 @@ class MuxWebhookController extends Controller
         $assetId = $data['id'] ?? null;
 
         if (!$assetId) {
+            \Log::warning('Mux webhook missing data', ['data' => $data]);
             return;
         }
 

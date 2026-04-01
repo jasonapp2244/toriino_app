@@ -15,7 +15,7 @@ class TeacherEarningController extends Controller
     {
         $user = $request->user();
 
-        $thisMonth      = Earning::where('user_id', $user->id)->whereMonth('created_at', now()->month)->sum('amount');
+        $thisMonth      = Earning::where('user_id', $user->id)->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->sum('amount');
         $totalWithdrawn = Withdrawal::where('user_id', $user->id)->where('status', 'approved')->sum('amount');
         $totalEarned    = Earning::where('user_id', $user->id)->sum('amount');
 

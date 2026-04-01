@@ -18,7 +18,7 @@ class SearchController extends Controller
             'type'   => 'nullable|in:mentor,teacher,course,all',
         ]);
 
-        $q    = $request->q;
+        $q    = str_replace(['%', '_'], ['\\%', '\\_'], $request->q);
         $type = $request->type ?? 'all';
 
         $result = [];
@@ -48,12 +48,14 @@ class SearchController extends Controller
         }
 
         if (in_array($type, ['course', 'all'])) {
-            $result['courses'] = Course::with('teacher.profile')
+            $result['courses'] = Course::with(['teacher.profile', 'category'])
                 ->where('status', 'published')
                 ->where(fn($c) =>
                     $c->where('title', 'like', "%$q%")
                       ->orWhere('description', 'like', "%$q%")
-                      ->orWhere('category', 'like', "%$q%")
+                      ->orWhereHas('category', fn($cat) =>
+                          $cat->where('name', 'like', "%$q%")
+                      )
                 )
                 ->take(10)
                 ->get();
@@ -64,13 +66,16 @@ class SearchController extends Controller
 
     public function mentors(Request $request): JsonResponse
     {
+        $specialization = $request->specialization ? str_replace(['%', '_'], ['\\%', '\\_'], $request->specialization) : null;
+        $language       = $request->language ? str_replace(['%', '_'], ['\\%', '\\_'], $request->language) : null;
+
         $mentors = User::with(['profile', 'mentorProfile'])
             ->whereHas('roles', fn($r) => $r->where('name', 'mentor'))
-            ->when($request->specialization, fn($q) =>
-                $q->whereHas('mentorProfile', fn($mp) => $mp->where('specialization', 'like', '%' . $request->specialization . '%'))
+            ->when($specialization, fn($q) =>
+                $q->whereHas('mentorProfile', fn($mp) => $mp->where('specialization', 'like', '%' . $specialization . '%'))
             )
-            ->when($request->language, fn($q) =>
-                $q->whereHas('mentorProfile', fn($mp) => $mp->where('languages', 'like', '%' . $request->language . '%'))
+            ->when($language, fn($q) =>
+                $q->whereHas('mentorProfile', fn($mp) => $mp->where('languages', 'like', '%' . $language . '%'))
             )
             ->when($request->verified, fn($q) =>
                 $q->whereHas('mentorProfile', fn($mp) => $mp->where('is_verified', true))
@@ -83,27 +88,31 @@ class SearchController extends Controller
 
     public function teachers(Request $request): JsonResponse
     {
+        $search   = $request->search ? str_replace(['%', '_'], ['\\%', '\\_'], $request->search) : null;
+        $subject  = $request->subject ? str_replace(['%', '_'], ['\\%', '\\_'], $request->subject) : null;
+        $language = $request->language ? str_replace(['%', '_'], ['\\%', '\\_'], $request->language) : null;
+
         $teachers = User::with(['profile', 'teacherProfile'])
             ->withCount([
                 'courses as available_courses_count' => fn($q) => $q->where('status', 'published'),
             ])
             ->whereHas('roles', fn($r) => $r->where('name', 'teacher'))
             ->whereHas('teacherProfile')
-            ->when($request->search, fn($q) =>
+            ->when($search, fn($q) =>
                 $q->where(fn($u) =>
-                    $u->where('name', 'like', '%' . $request->search . '%')
+                    $u->where('name', 'like', '%' . $search . '%')
                       ->orWhereHas('teacherProfile', fn($tp) =>
-                          $tp->where('subject', 'like', '%' . $request->search . '%')
-                             ->orWhere('designation', 'like', '%' . $request->search . '%')
+                          $tp->where('subject', 'like', '%' . $search . '%')
+                             ->orWhere('designation', 'like', '%' . $search . '%')
                              ->orWhereJsonContains('expertise_list', $request->search)
                       )
                 )
             )
-            ->when($request->subject, fn($q) =>
-                $q->whereHas('teacherProfile', fn($tp) => $tp->where('subject', 'like', '%' . $request->subject . '%'))
+            ->when($subject, fn($q) =>
+                $q->whereHas('teacherProfile', fn($tp) => $tp->where('subject', 'like', '%' . $subject . '%'))
             )
-            ->when($request->language, fn($q) =>
-                $q->whereHas('teacherProfile', fn($tp) => $tp->where('languages', 'like', '%' . $request->language . '%'))
+            ->when($language, fn($q) =>
+                $q->whereHas('teacherProfile', fn($tp) => $tp->where('languages', 'like', '%' . $language . '%'))
             )
             ->when($request->verified, fn($q) =>
                 $q->whereHas('teacherProfile', fn($tp) => $tp->where('is_verified', true))

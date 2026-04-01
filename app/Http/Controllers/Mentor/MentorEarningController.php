@@ -16,6 +16,7 @@ class MentorEarningController extends Controller
         $user = $request->user();
 
         $thisMonth     = Earning::where('user_id', $user->id)
+            ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->sum('amount');
 

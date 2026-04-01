@@ -8,6 +8,7 @@ use App\Models\AiChat;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AiChatController extends Controller
 {
@@ -26,7 +27,12 @@ class AiChatController extends Controller
             'question' => 'required|string|min:2|max:1000',
         ]);
 
-        $answer = $this->callOpenAi($request->question);
+        try {
+            $answer = $this->callOpenAi($request->question);
+        } catch (\Throwable $e) {
+            report($e);
+            return ApiResponse::error('AI service temporarily unavailable. Please try again later.', 503);
+        }
 
         $chat = AiChat::create([
             'user_id'  => $request->user()->id,
@@ -49,7 +55,8 @@ class AiChatController extends Controller
         $apiKey = config('services.openai.key');
 
         if (!$apiKey) {
-            return 'AI service is not configured. Please set OPENAI_API_KEY in your .env file.';
+            Log::warning('OpenAI API key not configured');
+            return 'AI service is temporarily unavailable. Please try again later.';
         }
 
         $response = Http::withHeaders([

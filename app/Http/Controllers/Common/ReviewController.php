@@ -25,6 +25,7 @@ class ReviewController extends Controller
         $existing = Review::where('from_user_id', $request->user()->id)
             ->when($request->session_id, fn($q) => $q->where('session_id', $request->session_id))
             ->when($request->course_id,  fn($q) => $q->where('course_id',  $request->course_id))
+            ->when($request->to_user_id, fn($q) => $q->where('to_user_id', $request->to_user_id))
             ->first();
 
         if ($existing) {
@@ -40,13 +41,19 @@ class ReviewController extends Controller
             'comment'      => $request->comment,
         ]);
 
-        // update aggregate ratings
+        // update aggregate ratings based on target user's role
         if ($request->to_user_id) {
             $avg = Review::where('to_user_id', $request->to_user_id)->avg('rating');
             $cnt = Review::where('to_user_id', $request->to_user_id)->count();
             $target = User::find($request->to_user_id);
-            $target?->mentorProfile()?->update(['rating' => $avg, 'total_reviews' => $cnt]);
-            $target?->teacherProfile()?->update(['rating' => $avg, 'total_reviews' => $cnt]);
+            if ($target) {
+                if ($target->hasRole('mentor')) {
+                    $target->mentorProfile()?->update(['rating' => $avg, 'total_reviews' => $cnt]);
+                }
+                if ($target->hasRole('teacher')) {
+                    $target->teacherProfile()?->update(['rating' => $avg, 'total_reviews' => $cnt]);
+                }
+            }
         }
 
         if ($request->course_id) {

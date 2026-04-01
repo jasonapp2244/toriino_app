@@ -56,16 +56,26 @@ class MentorSubscriptionController extends Controller
         // Cancel any existing active subscription
         $user->subscriptions()->where('status', 'active')->update(['status' => 'cancelled']);
 
+        $isPaid = $plan['price'] > 0;
+
         $subscription = Subscription::create([
             'user_id'    => $user->id,
             'plan'       => $request->plan,
             'price'      => $plan['price'],
-            'starts_at'  => now(),
-            'expires_at' => now()->addDays($plan['days']),
-            'status'     => 'active',
+            'starts_at'  => $isPaid ? null : now(),
+            'expires_at' => $isPaid ? null : now()->addDays($plan['days']),
+            'status'     => $isPaid ? 'pending' : 'active',
         ]);
 
-        // Feature the mentor profile after subscribing
+        if ($isPaid) {
+            return ApiResponse::created([
+                'subscription'            => $subscription,
+                'has_active_subscription' => false,
+                'payment_required'        => true,
+            ], "Subscription created. Please complete payment to activate your {$plan['name']} plan.");
+        }
+
+        // Feature the mentor profile after subscribing (free plans only)
         $user->mentorProfile()->updateOrCreate(
             ['user_id' => $user->id],
             ['is_featured' => true]

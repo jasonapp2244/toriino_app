@@ -117,7 +117,7 @@ class PaymentController extends Controller
             $intent = $this->stripe->retrievePaymentIntent($request->payment_intent_id);
             if ($intent->status !== 'succeeded') {
                 $payment->update(['status' => 'failed']);
-                return ApiResponse::error('Payment not completed. Status: ' . $intent->status, 402);
+                return ApiResponse::error('Payment not completed.', 402);
             }
 
             $payment->update([
@@ -224,7 +224,7 @@ class PaymentController extends Controller
             $intent = $this->stripe->retrievePaymentIntent($request->payment_intent_id);
             if ($intent->status !== 'succeeded') {
                 $payment->update(['status' => 'failed']);
-                return ApiResponse::error('Payment not completed. Status: ' . $intent->status, 402);
+                return ApiResponse::error('Payment not completed.', 402);
             }
 
             $payment->update([
@@ -258,10 +258,13 @@ class PaymentController extends Controller
         $plan  = $this->plans[$request->plan];
         $user  = $request->user();
 
+        // Find or determine the subscription that will be activated
+        $existingSubscription = $user->subscriptions()->where('status', 'active')->first();
+
         $payment = Payment::create([
             'user_id'           => $user->id,
             'payable_type'      => 'subscription',
-            'payable_id'        => 0,
+            'payable_id'        => $existingSubscription?->id ?? 0,
             'amount'            => $plan['price'],
             'currency'          => 'USD',
             'status'            => 'pending',
@@ -338,6 +341,9 @@ class PaymentController extends Controller
                 'status'     => 'active',
             ]);
 
+            // Link payment to the newly created subscription
+            $payment->update(['payable_id' => $subscription->id]);
+
             // Feature profile
             if ($request->role === 'mentor') {
                 $user->mentorProfile()?->update(['is_featured' => true]);
@@ -398,6 +404,7 @@ class PaymentController extends Controller
         try {
             $event = $this->stripe->constructWebhookEvent($payload, $sigHeader);
         } catch (\Exception $e) {
+            \Log::error('Stripe webhook verification failed', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Webhook verification failed'], 400);
         }
 

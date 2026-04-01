@@ -37,8 +37,8 @@ class ChatController extends Controller
     {
         $user = $request->user();
 
-        $conversations = Conversation::where('participant_one_id', $user->id)
-            ->orWhere('participant_two_id', $user->id)
+        $conversations = Conversation::where(fn($q) => $q->where('participant_one_id', $user->id)
+            ->orWhere('participant_two_id', $user->id))
             ->with([
                 'participantOne:id,full_name,name,profile,role',
                 'participantTwo:id,full_name,name,profile,role',
@@ -203,7 +203,12 @@ class ChatController extends Controller
 
     /**
      * DELETE /chat/conversations/{id}
-     * Remove conversation from the caller's list (deletes messages too — both sides).
+     * Remove conversation from the caller's list.
+     *
+     * WARNING: This deletes the conversation for BOTH participants because
+     * the schema does not support per-user soft-delete/hide. A future migration
+     * should add a `hidden_by` or pivot table to allow per-user hiding.
+     * For now, we only verify the caller is a participant (authorization check).
      */
     public function destroy(int $id, Request $request): JsonResponse
     {

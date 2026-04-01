@@ -359,13 +359,28 @@ class MentorSessionController extends Controller
 
     public function destroy(int $id, Request $request): JsonResponse
     {
-        $session = MentorSession::where('mentor_id', $request->user()->id)->find($id);
+        $session = MentorSession::where('mentor_id', $request->user()->id)
+            ->with('bookings')
+            ->find($id);
 
         if (!$session) {
             return ApiResponse::notFound('Session not found');
         }
 
         $session->update(['status' => 'cancelled']);
+
+        // Cancel all associated bookings and notify students
+        $confirmedBookings = $session->bookings()->whereIn('status', ['confirmed', 'pending'])->get();
+        foreach ($confirmedBookings as $booking) {
+            $booking->update(['status' => 'cancelled']);
+
+            AppNotification::create([
+                'user_id' => $booking->student_id,
+                'title'   => 'Session Cancelled',
+                'body'    => 'The session "' . $session->title . '" has been cancelled by the mentor.',
+                'type'    => 'session_cancelled',
+            ]);
+        }
 
         return ApiResponse::success(null, 'Session cancelled');
     }

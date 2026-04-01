@@ -51,7 +51,7 @@ Route::prefix('v1')->group(function () {
     });
 
     //cache clear — admin only
-    Route::middleware('auth:sanctum')->get('cache-clear', function () {
+    Route::middleware(['auth:sanctum', 'role:admin'])->get('cache-clear', function () {
         Artisan::call('cache:clear');
         return response()->json([
             'message' => 'Cache cleared',
@@ -61,12 +61,12 @@ Route::prefix('v1')->group(function () {
     // Auth (rate-limited to prevent brute force)
     Route::middleware('throttle:10,1')->group(function () {
         Route::post('register',        [AuthController::class, 'register']);
-        Route::post('otp-verify',      [AuthController::class, 'otpVerify']);
+        Route::post('otp-verify',      [AuthController::class, 'otpVerify'])->middleware('throttle:5,5');
         Route::post('resend-otp',      [AuthController::class, 'resendOtp']);
         Route::post('login',           [AuthController::class, 'login']);
         Route::post('social-login',    [AuthController::class, 'socialLogin']);
         Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-        Route::post('reset-password',  [AuthController::class, 'resetPassword']);
+        Route::post('reset-password',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,5');
     });
 
     // Discovery & Search
@@ -91,10 +91,10 @@ Route::prefix('v1')->group(function () {
     Route::get('mentor-student-levels',[CourseDropdownController::class, 'mentorStudentLevels']);
 
     // Mux webhook (called by Mux servers, not by app clients)
-    Route::post('webhooks/mux', [MuxWebhookController::class, 'handle']);
+    Route::middleware('throttle:60,1')->post('webhooks/mux', [MuxWebhookController::class, 'handle']);
 
     // Stripe webhook (called by Stripe, no auth required)
-    Route::post('webhooks/stripe', [\App\Http\Controllers\Common\PaymentController::class, 'handleWebhook']);
+    Route::middleware('throttle:60,1')->post('webhooks/stripe', [\App\Http\Controllers\Common\PaymentController::class, 'handleWebhook']);
 
     // Public Courses & Reviews
     Route::get('courses',             [StudentCourseController::class, 'index']);
